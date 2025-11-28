@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorenceEgi\CoreModels\Models;
+namespace FlorenceEgi\Hub\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * - removed: Rimosso dall'admin
  * - expired: Invito scaduto
  * 
- * @package FlorenceEgi\CoreModels\Models
+ * @package FlorenceEgi\Hub\Models
  * @author Fabio Cherici
  * @version 1.0.0
  * @date 2025-11-28
@@ -149,7 +149,7 @@ class AggregationMember extends Model
         return $query->where('status', self::STATUS_PENDING)
             ->where(function ($q) {
                 $q->whereNull('expires_at')
-                  ->orWhere('expires_at', '>', now());
+                    ->orWhere('expires_at', '>', now());
             });
     }
 
@@ -302,7 +302,7 @@ class AggregationMember extends Model
 
         // Altrimenti usa le impostazioni dell'aggregazione
         $aggregation = $this->aggregation;
-        
+
         return match ($permission) {
             'share_documents' => $aggregation->share_documents,
             'share_analytics' => $aggregation->share_analytics,

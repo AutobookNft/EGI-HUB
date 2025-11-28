@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace FlorenceEgi\CoreModels\Traits;
+namespace FlorenceEgi\Hub\Traits;
 
-use FlorenceEgi\CoreModels\Models\Aggregation;
-use FlorenceEgi\CoreModels\Models\AggregationMember;
+use FlorenceEgi\Hub\Models\Aggregation;
+use FlorenceEgi\Hub\Models\AggregationMember;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -19,11 +19,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * ```php
  * class Tenant extends Model
  * {
- *     use \FlorenceEgi\CoreModels\Traits\HasAggregations;
+ *     use \FlorenceEgi\Hub\Traits\HasAggregations;
  * }
  * ```
  * 
- * @package FlorenceEgi\CoreModels\Traits
+ * @package FlorenceEgi\Hub\Traits
  * @author Fabio Cherici
  * @version 1.0.0
  * @date 2025-11-28
@@ -64,7 +64,7 @@ trait HasAggregations
             ->where('status', AggregationMember::STATUS_PENDING)
             ->where(function ($q) {
                 $q->whereNull('expires_at')
-                  ->orWhere('expires_at', '>', now());
+                    ->orWhere('expires_at', '>', now());
             });
     }
 

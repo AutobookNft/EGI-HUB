@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FlorenceEgi\CoreModels\Models;
+namespace FlorenceEgi\Hub\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,7 +26,7 @@ use Illuminate\Support\Str;
  * - Firenze può anche creare "Area Metropolitana" con altri comuni
  * - Un comune può essere in entrambe le aggregazioni
  * 
- * @package FlorenceEgi\CoreModels\Models
+ * @package FlorenceEgi\Hub\Models
  * @author Fabio Cherici
  * @version 1.0.0
  * @date 2025-11-28
@@ -88,7 +88,7 @@ class Aggregation extends Model
             if (empty($aggregation->slug)) {
                 $aggregation->slug = Str::slug($aggregation->name);
             }
-            
+
             // Assicura unicità slug
             $originalSlug = $aggregation->slug;
             $counter = 1;

@@ -1,8 +1,10 @@
 {
-    "name": "florenceegi/core-models",
-    "description": "Modelli condivisi tra FlorenceEGI, NATAN_LOC e altri progetti EGI",
+    "name": "florenceegi/hub",
+    "description": "FlorenceEGI Hub - Central coordination layer for the entire EGI platform ecosystem",
     "type": "library",
     "license": "proprietary",
+    "keywords": ["florenceegi", "hub", "multi-tenant", "aggregations", "natan", "egi"],
+    "homepage": "https://florenceegi.com",
     "authors": [
         {
             "name": "Fabio Cherici",
@@ -18,13 +20,13 @@
     },
     "autoload": {
         "psr-4": {
-            "FlorenceEgi\\CoreModels\\": "src/"
+            "FlorenceEgi\\Hub\\": "src/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "FlorenceEgi\\CoreModels\\CoreModelsServiceProvider"
+                "FlorenceEgi\\Hub\\HubServiceProvider"
             ]
         }
     }

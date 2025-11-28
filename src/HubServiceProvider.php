@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace FlorenceEgi\CoreModels;
+namespace FlorenceEgi\Hub;
 
 use Illuminate\Support\ServiceProvider;
 
 /**
- * Service Provider per FlorenceEGI Core Models
+ * Service Provider per FlorenceEGI Hub
  * 
  * Registra automaticamente le migrazioni condivise in tutti i progetti
  * che utilizzano questo package (NATAN_LOC, EGI, FlorenceArtEgi, etc.)
  * 
- * @package FlorenceEgi\CoreModels
+ * @package FlorenceEgi\Hub
  * @author Fabio Cherici
  * @version 1.0.0
  * @date 2025-11-28
  */
-class CoreModelsServiceProvider extends ServiceProvider
+class HubServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap any application services.
@@ -26,16 +26,16 @@ class CoreModelsServiceProvider extends ServiceProvider
     {
         // Pubblica le migrazioni
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-        
+
         // Pubblica la configurazione
         $this->publishes([
-            __DIR__ . '/../config/egi-core.php' => config_path('egi-core.php'),
-        ], 'egi-core-config');
-        
+            __DIR__ . '/../config/egi-hub.php' => config_path('egi-hub.php'),
+        ], 'egi-hub-config');
+
         // Pubblica le migrazioni (opzionale, per customizzazione)
         $this->publishes([
             __DIR__ . '/../database/migrations' => database_path('migrations'),
-        ], 'egi-core-migrations');
+        ], 'egi-hub-migrations');
     }
 
     /**
@@ -44,8 +44,8 @@ class CoreModelsServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(
-            __DIR__ . '/../config/egi-core.php',
-            'egi-core'
+            __DIR__ . '/../config/egi-hub.php',
+            'egi-hub'
         );
     }
 }

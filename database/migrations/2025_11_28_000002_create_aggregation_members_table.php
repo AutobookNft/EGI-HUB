@@ -34,25 +34,25 @@ return new class extends Migration
     {
         Schema::create('aggregation_members', function (Blueprint $table) {
             $table->id();
-            
+
             // Relazioni
             $table->foreignId('aggregation_id')
                 ->constrained('aggregations')
                 ->onDelete('cascade')
                 ->comment('Aggregazione di appartenenza');
-            
+
             $table->foreignId('tenant_id')
                 ->constrained('tenants')
                 ->onDelete('cascade')
                 ->comment('Tenant membro');
-            
+
             // Chi ha invitato (null = creatore aggregazione)
             $table->foreignId('invited_by_tenant_id')
                 ->nullable()
                 ->constrained('tenants')
                 ->onDelete('set null')
                 ->comment('Tenant che ha inviato invito');
-            
+
             // Stato membership
             $table->enum('status', [
                 'pending',   // Invito inviato
@@ -62,36 +62,36 @@ return new class extends Migration
                 'removed',   // Rimosso da admin
                 'expired'    // Invito scaduto
             ])->default('pending')->comment('Stato appartenenza');
-            
+
             // Ruolo nel gruppo
             $table->enum('role', [
                 'admin',     // Può gestire membri e impostazioni
                 'member',    // Membro standard
                 'readonly'   // Solo lettura dati condivisi
             ])->default('member')->comment('Ruolo nel gruppo');
-            
+
             // Permessi granulari (override delle impostazioni aggregazione)
             $table->json('permissions')->nullable()->comment('Permessi specifici per questo membro');
-            
+
             // Timeline
             $table->timestamp('invited_at')->nullable()->comment('Data invito');
             $table->timestamp('responded_at')->nullable()->comment('Data risposta (accept/reject)');
             $table->timestamp('joined_at')->nullable()->comment('Data ingresso effettivo');
             $table->timestamp('left_at')->nullable()->comment('Data uscita');
             $table->timestamp('expires_at')->nullable()->comment('Scadenza invito');
-            
+
             // Motivazioni
             $table->text('invitation_message')->nullable()->comment('Messaggio invito');
             $table->text('response_message')->nullable()->comment('Messaggio risposta');
             $table->text('leave_reason')->nullable()->comment('Motivo uscita');
-            
+
             // Audit
             $table->timestamps();
             $table->softDeletes();
-            
+
             // Vincolo unicità: un tenant può essere in un'aggregazione una sola volta
             $table->unique(['aggregation_id', 'tenant_id'], 'unique_aggregation_member');
-            
+
             // Indici per query frequenti
             $table->index(['tenant_id', 'status'], 'idx_tenant_active_memberships');
             $table->index(['aggregation_id', 'status'], 'idx_aggregation_active_members');
