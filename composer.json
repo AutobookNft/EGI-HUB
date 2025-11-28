@@ -1,0 +1,31 @@
+{
+    "name": "florenceegi/core-models",
+    "description": "Modelli condivisi tra FlorenceEGI, NATAN_LOC e altri progetti EGI",
+    "type": "library",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Fabio Cherici",
+            "email": "fabio@florenceegi.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "php": "^8.1",
+        "illuminate/database": "^10.0|^11.0",
+        "illuminate/support": "^10.0|^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "FlorenceEgi\\CoreModels\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "FlorenceEgi\\CoreModels\\CoreModelsServiceProvider"
+            ]
+        }
+    }
+}
