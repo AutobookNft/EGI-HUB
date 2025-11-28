@@ -19,33 +19,10 @@ use Illuminate\Support\Str;
  * Le aggregazioni sono peer-to-peer: qualsiasi tenant può crearle e
  * invitare altri tenant a partecipare.
  * 
- * ESEMPIO D'USO:
- * - Comune di Firenze crea aggregazione "Piana Fiorentina"
- * - Invita Scandicci, Sesto, Calenzano
- * - Chi accetta può vedere i documenti degli altri membri
- * - Firenze può anche creare "Area Metropolitana" con altri comuni
- * - Un comune può essere in entrambe le aggregazioni
- * 
  * @package FlorenceEgi\Hub\Models
  * @author Fabio Cherici
- * @version 1.0.0
+ * @version 1.0.1
  * @date 2025-11-28
- * 
- * @property int $id
- * @property string $name
- * @property string $slug
- * @property string|null $description
- * @property int $created_by_tenant_id
- * @property string $status
- * @property array|null $settings
- * @property bool $share_documents
- * @property bool $share_analytics
- * @property bool $share_templates
- * @property bool $members_can_invite
- * @property int|null $max_members
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
- * @property \Carbon\Carbon|null $deleted_at
  */
 class Aggregation extends Model
 {
@@ -77,23 +54,27 @@ class Aggregation extends Model
     ];
 
     /**
-     * Boot del modello
+     * Boot del modello - usa booted() invece di boot() per evitare
+     * problemi durante il caricamento dell'autoloader
      */
-    protected static function boot()
+    protected static function booted(): void
     {
-        parent::boot();
-
         // Auto-genera slug se non fornito
         static::creating(function ($aggregation) {
             if (empty($aggregation->slug)) {
                 $aggregation->slug = Str::slug($aggregation->name);
             }
 
-            // Assicura unicità slug
-            $originalSlug = $aggregation->slug;
-            $counter = 1;
-            while (static::where('slug', $aggregation->slug)->exists()) {
-                $aggregation->slug = $originalSlug . '-' . $counter++;
+            // Assicura unicità slug - solo se la connessione è disponibile
+            try {
+                $originalSlug = $aggregation->slug;
+                $counter = 1;
+                while (static::where('slug', $aggregation->slug)->exists()) {
+                    $aggregation->slug = $originalSlug . '-' . $counter++;
+                }
+            } catch (\Exception $e) {
+                // Se DB non disponibile, usa timestamp per unicità
+                $aggregation->slug = $aggregation->slug . '-' . time();
             }
         });
     }
@@ -187,7 +168,6 @@ class Aggregation extends Model
      */
     public function isAdmin(int $tenantId): bool
     {
-        // Il creatore è sempre admin
         if ($this->created_by_tenant_id === $tenantId) {
             return true;
         }
@@ -235,7 +215,6 @@ class Aggregation extends Model
      */
     public function inviteTenant(int $tenantId, int $invitedByTenantId, ?string $message = null): AggregationMember
     {
-        // Verifica se già membro o con invito pending
         $existing = $this->memberships()
             ->where('tenant_id', $tenantId)
             ->whereIn('status', ['pending', 'accepted'])
