@@ -1,7 +1,7 @@
 {
     "name": "florenceegi/hub",
-    "description": "FlorenceEGI Hub - Central coordination layer for the entire EGI platform ecosystem",
-    "type": "library",
+    "description": "EGI-HUB - Central Control Application for the entire FlorenceEGI ecosystem",
+    "type": "project",
     "license": "proprietary",
     "keywords": ["florenceegi", "hub", "multi-tenant", "aggregations", "natan", "egi"],
     "homepage": "https://florenceegi.com",

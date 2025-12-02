@@ -1,0 +1,166 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * EGI-HUB API Routes
+ * 
+ * API-only routes returning JSON responses.
+ * Consumed by React frontend and external projects.
+ * 
+ * @package EGI-HUB
+ * @author Fabio Cherici
+ * @version 1.0.0
+ * @date 2025-12-01
+ */
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AggregationController;
+
+// Superadmin Controllers
+use App\Http\Controllers\Api\Superadmin\DashboardController;
+use App\Http\Controllers\Api\Superadmin\AiConsultationsController;
+use App\Http\Controllers\Api\Superadmin\AiCreditsController;
+use App\Http\Controllers\Api\Superadmin\AiFeaturesController;
+use App\Http\Controllers\Api\Superadmin\AiStatisticsController;
+use App\Http\Controllers\Api\Superadmin\EgiliController;
+use App\Http\Controllers\Api\Superadmin\EquilibriumController;
+use App\Http\Controllers\Api\Superadmin\RolesController;
+use App\Http\Controllers\Api\Superadmin\FeaturePricingController;
+use App\Http\Controllers\Api\Superadmin\PromotionsController;
+use App\Http\Controllers\Api\Superadmin\FeaturedCalendarController;
+use App\Http\Controllers\Api\Superadmin\ConsumptionLedgerController;
+use App\Http\Controllers\Api\Superadmin\PadminDashboardController;
+use App\Http\Controllers\Api\Superadmin\PadminViolationsController;
+use App\Http\Controllers\Api\Superadmin\PadminSymbolsController;
+use App\Http\Controllers\Api\Superadmin\PadminSearchController;
+use App\Http\Controllers\Api\Superadmin\PadminStatisticsController;
+
+/*
+|--------------------------------------------------------------------------
+| Superadmin API Routes
+|--------------------------------------------------------------------------
+| All routes for the React SuperAdmin frontend.
+| Prefix: /api/superadmin
+*/
+Route::prefix('superadmin')->name('superadmin.')->group(function () {
+    
+    // Dashboard
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('stats', [DashboardController::class, 'stats'])->name('stats');
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI Management
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('ai')->name('ai.')->group(function () {
+        // Consultations
+        Route::get('consultations', [AiConsultationsController::class, 'index'])->name('consultations.index');
+        Route::get('consultations/{id}', [AiConsultationsController::class, 'show'])->name('consultations.show');
+        
+        // Credits
+        Route::get('credits', [AiCreditsController::class, 'index'])->name('credits.index');
+        Route::post('credits', [AiCreditsController::class, 'store'])->name('credits.store');
+        Route::post('credits/{userId}/reset', [AiCreditsController::class, 'reset'])->name('credits.reset');
+        
+        // Features
+        Route::get('features', [AiFeaturesController::class, 'index'])->name('features.index');
+        Route::post('features/{slug}/toggle', [AiFeaturesController::class, 'toggle'])->name('features.toggle');
+        Route::put('features/{slug}', [AiFeaturesController::class, 'update'])->name('features.update');
+        
+        // Statistics
+        Route::get('statistics', [AiStatisticsController::class, 'index'])->name('statistics');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tokenomics
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('tokenomics')->name('tokenomics.')->group(function () {
+        // Egili
+        Route::get('egili', [EgiliController::class, 'index'])->name('egili.index');
+        Route::post('egili/mint', [EgiliController::class, 'mint'])->name('egili.mint');
+        Route::post('egili/burn', [EgiliController::class, 'burn'])->name('egili.burn');
+        
+        // Equilibrium
+        Route::get('equilibrium', [EquilibriumController::class, 'index'])->name('equilibrium.index');
+        Route::post('equilibrium/recalculate', [EquilibriumController::class, 'recalculate'])->name('equilibrium.recalculate');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Platform Management
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('platform')->name('platform.')->group(function () {
+        // Roles
+        Route::get('roles', [RolesController::class, 'index'])->name('roles.index');
+        Route::post('roles', [RolesController::class, 'store'])->name('roles.store');
+        Route::delete('roles/{id}', [RolesController::class, 'destroy'])->name('roles.destroy');
+        
+        // Feature Pricing
+        Route::get('pricing', [FeaturePricingController::class, 'index'])->name('pricing.index');
+        Route::put('pricing/{id}', [FeaturePricingController::class, 'update'])->name('pricing.update');
+        
+        // Promotions
+        Route::get('promotions', [PromotionsController::class, 'index'])->name('promotions.index');
+        Route::post('promotions', [PromotionsController::class, 'store'])->name('promotions.store');
+        Route::put('promotions/{id}', [PromotionsController::class, 'update'])->name('promotions.update');
+        Route::delete('promotions/{id}', [PromotionsController::class, 'destroy'])->name('promotions.destroy');
+        
+        // Featured Calendar
+        Route::get('featured-calendar', [FeaturedCalendarController::class, 'index'])->name('featured-calendar.index');
+        Route::post('featured-calendar', [FeaturedCalendarController::class, 'store'])->name('featured-calendar.store');
+        Route::delete('featured-calendar/{id}', [FeaturedCalendarController::class, 'destroy'])->name('featured-calendar.destroy');
+        
+        // Consumption Ledger
+        Route::get('consumption-ledger', [ConsumptionLedgerController::class, 'index'])->name('consumption-ledger.index');
+        Route::get('consumption-ledger/export', [ConsumptionLedgerController::class, 'export'])->name('consumption-ledger.export');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Padmin OS3
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('padmin')->name('padmin.')->group(function () {
+        // Dashboard
+        Route::get('dashboard', [PadminDashboardController::class, 'index'])->name('dashboard');
+        Route::post('scan', [PadminDashboardController::class, 'scan'])->name('scan');
+        
+        // Violations
+        Route::get('violations', [PadminViolationsController::class, 'index'])->name('violations.index');
+        Route::put('violations/{id}', [PadminViolationsController::class, 'update'])->name('violations.update');
+        Route::post('violations/{id}/autofix', [PadminViolationsController::class, 'autofix'])->name('violations.autofix');
+        
+        // Symbols
+        Route::get('symbols', [PadminSymbolsController::class, 'index'])->name('symbols.index');
+        Route::get('symbols/{id}', [PadminSymbolsController::class, 'show'])->name('symbols.show');
+        Route::post('symbols/analyze', [PadminSymbolsController::class, 'analyze'])->name('symbols.analyze');
+        
+        // Search
+        Route::get('search', [PadminSearchController::class, 'index'])->name('search');
+        
+        // Statistics
+        Route::get('statistics', [PadminStatisticsController::class, 'index'])->name('statistics');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Aggregations API
+|--------------------------------------------------------------------------
+*/
+Route::prefix('aggregations')->name('aggregations.')->group(function () {
+    Route::get('/', [AggregationController::class, 'index'])->name('index');
+    Route::post('/', [AggregationController::class, 'store'])->name('store');
+    Route::get('{aggregation}', [AggregationController::class, 'show'])->name('show');
+    Route::put('{aggregation}', [AggregationController::class, 'update'])->name('update');
+    Route::delete('{aggregation}', [AggregationController::class, 'destroy'])->name('destroy');
+    
+    // Members management
+    Route::post('{aggregation}/invite', [AggregationController::class, 'invite'])->name('invite');
+    Route::get('{aggregation}/members', [AggregationController::class, 'members'])->name('members');
+});
