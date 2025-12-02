@@ -11,7 +11,7 @@
 │     └── [altri].florenceegi.com  → Altri tenant                 │
 ├─────────────────────────────────────────────────────────────────┤
 │                         STAGING                                 │
-│  hub.13.48.57.194.sslip.io (EGI-HUB)                           │
+│  egi-hub.13.48.57.194.sslip.io (EGI-HUB)                       │
 │     ├── natan_loc.13.48.57.194.sslip.io  → NATAN LOC           │
 │     ├── app.13.48.57.194.sslip.io        → FlorenceArtEGI      │
 │     └── [altri].13.48.57.194.sslip.io    → Altri tenant        │
@@ -129,7 +129,7 @@ In Forge Dashboard → Server → Daemons:
 ### 4. Verificare Health Check
 
 ```bash
-curl https://hub.13.48.57.194.sslip.io/api/tenants/health
+curl https://egi-hub.13.48.57.194.sslip.io/api/tenants/health
 ```
 
 ## Variabili Environment
@@ -137,7 +137,7 @@ curl https://hub.13.48.57.194.sslip.io/api/tenants/health
 ### .env (Staging)
 ```env
 APP_ENV=staging
-APP_URL=https://hub.13.48.57.194.sslip.io
+APP_URL=https://egi-hub.13.48.57.194.sslip.io
 ```
 
 ### .env (Produzione)
