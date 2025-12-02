@@ -1,5 +1,16 @@
 import axios from 'axios'
 
+/**
+ * EGI-HUB API Client
+ * 
+ * Tutte le chiamate passano dal backend EGI-HUB (porta 8002)
+ * Il backend fa da proxy/aggregatore verso i tenant registrati
+ * 
+ * Esempi:
+ *   api.get('/superadmin/dashboard')     → dati hub
+ *   api.get('/tenants')                  → lista tenant
+ *   api.get('/tenants/1/users')          → proxy a tenant 1
+ */
 export const api = axios.create({
   baseURL: '/api',
   headers: {
@@ -22,7 +33,6 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized - redirect to login
       window.location.href = '/login'
     }
     return Promise.reject(error)

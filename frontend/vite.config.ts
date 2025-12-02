@@ -13,9 +13,10 @@ export default defineConfig({
   server: {
     port: 5174,
     proxy: {
-      // Proxy API calls to EGI-HUB Laravel backend (port 8001)
+      // Tutte le API passano dal backend EGI-HUB
+      // Il backend fa da proxy/aggregatore verso i tenant
       '/api': {
-        target: 'http://localhost:8001',
+        target: 'http://localhost:8002',
         changeOrigin: true,
       },
     },

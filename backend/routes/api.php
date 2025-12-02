@@ -16,6 +16,9 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AggregationController;
+use App\Http\Controllers\Api\TenantController;
+use App\Http\Controllers\Api\TenantProxyController;
+use App\Http\Controllers\Api\TenantActivityController;
 
 // Superadmin Controllers
 use App\Http\Controllers\Api\Superadmin\DashboardController;
@@ -163,4 +166,74 @@ Route::prefix('aggregations')->name('aggregations.')->group(function () {
     // Members management
     Route::post('{aggregation}/invite', [AggregationController::class, 'invite'])->name('invite');
     Route::get('{aggregation}/members', [AggregationController::class, 'members'])->name('members');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Tenants Management API
+|--------------------------------------------------------------------------
+| Routes for managing tenants (applications) in the EGI-HUB ecosystem.
+| Only accessible by SuperAdmin.
+*/
+Route::prefix('tenants')->name('tenants.')->group(function () {
+    // CRUD operations
+    Route::get('/', [TenantController::class, 'index'])->name('index');
+    Route::post('/', [TenantController::class, 'store'])->name('store');
+    Route::get('stats', [TenantController::class, 'stats'])->name('stats');
+    Route::get('{tenant}', [TenantController::class, 'show'])->name('show');
+    Route::put('{tenant}', [TenantController::class, 'update'])->name('update');
+    Route::delete('{tenant}', [TenantController::class, 'destroy'])->name('destroy');
+    
+    // Health checks
+    Route::get('{tenant}/health', [TenantController::class, 'healthCheck'])->name('health');
+    Route::post('health-check-all', [TenantController::class, 'healthCheckAll'])->name('health-all');
+    
+    // Service control (Start/Stop)
+    Route::post('{tenant}/start', [TenantController::class, 'start'])->name('start');
+    Route::post('{tenant}/stop', [TenantController::class, 'stop'])->name('stop');
+    
+    // Tenant activities
+    Route::get('{tenant}/activities', [TenantActivityController::class, 'forTenant'])->name('activities');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Tenant Activities API
+|--------------------------------------------------------------------------
+| Routes for viewing and analyzing tenant activities.
+*/
+Route::prefix('activities')->name('activities.')->group(function () {
+    Route::get('/', [TenantActivityController::class, 'index'])->name('index');
+    Route::get('stats', [TenantActivityController::class, 'stats'])->name('stats');
+    Route::get('recent', [TenantActivityController::class, 'recent'])->name('recent');
+    Route::get('timeline', [TenantActivityController::class, 'timeline'])->name('timeline');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Tenant Proxy API
+|--------------------------------------------------------------------------
+| Routes for proxying requests to tenant APIs.
+| EGI-HUB acts as intermediary between frontend and tenant backends.
+*/
+Route::prefix('proxy')->name('proxy.')->group(function () {
+    // Aggregate data from all tenants
+    Route::get('aggregate', [TenantProxyController::class, 'aggregate'])->name('aggregate');
+    
+    // Proxy to specific tenant
+    Route::get('{tenantSlug}/{path?}', [TenantProxyController::class, 'get'])
+        ->where('path', '.*')
+        ->name('get');
+    Route::post('{tenantSlug}/{path?}', [TenantProxyController::class, 'post'])
+        ->where('path', '.*')
+        ->name('post');
+    Route::put('{tenantSlug}/{path?}', [TenantProxyController::class, 'put'])
+        ->where('path', '.*')
+        ->name('put');
+    Route::patch('{tenantSlug}/{path?}', [TenantProxyController::class, 'patch'])
+        ->where('path', '.*')
+        ->name('patch');
+    Route::delete('{tenantSlug}/{path?}', [TenantProxyController::class, 'delete'])
+        ->where('path', '.*')
+        ->name('delete');
 });

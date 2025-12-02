@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Edit2, Trash2, Check, X, Users, Database, Brain, Globe } from 'lucide-react';
+import { FileText, Plus, Edit2, Trash2, Check, X, Users, Database, Brain } from 'lucide-react';
 import api from '@/services/api';
 
 interface Plan {
@@ -24,7 +24,7 @@ interface Plan {
 export default function TenantPlans() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [_editingPlan, setEditingPlan] = useState<Plan | null>(null); // TODO: implement edit
 
   useEffect(() => {
     fetchPlans();

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, Loader2, AlertCircle, Plus, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, AlertCircle, Plus, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import api from '../../services/api';
 

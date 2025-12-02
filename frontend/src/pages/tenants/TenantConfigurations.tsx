@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, Save, RefreshCw, Globe, Database, Mail, Shield, Palette } from 'lucide-react';
+import { Settings, Save, RefreshCw,  Database, Mail, Shield, Palette } from 'lucide-react';
 import api from '@/services/api';
 
 interface TenantConfig {

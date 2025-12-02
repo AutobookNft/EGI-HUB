@@ -23,6 +23,12 @@
             "FlorenceEgi\\Hub\\": "src/"
         }
     },
+    "scripts": {
+        "dev": "./start.sh",
+        "start": "./start.sh",
+        "backend": "cd backend && php artisan serve --port=8001",
+        "frontend": "cd frontend && npm run dev"
+    },
     "extra": {
         "laravel": {
             "providers": [

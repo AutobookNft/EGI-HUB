@@ -16,7 +16,7 @@ interface Domain {
 export default function SystemDomains() {
   const [domains, setDomains] = useState<Domain[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newDomain, setNewDomain] = useState('');
+  const [_newDomain, _setNewDomain] = useState(''); // TODO: implement add domain
 
   useEffect(() => {
     fetchDomains();

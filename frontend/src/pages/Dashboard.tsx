@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { Brain, Users, Palette, Sparkles, MessageSquare, CreditCard, Coins, Loader2, AlertCircle } from 'lucide-react';
+import { Brain, Users, Palette, Sparkles, MessageSquare, CreditCard, Coins, Loader2, AlertCircle, Building2, Activity, CheckCircle, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import { getTenants, getTenantStats } from '../services/tenantApi';
+import type { TenantStats, Tenant } from '../types/tenant';
 
 interface DashboardStats {
   ai_consultations: number;
@@ -26,7 +28,19 @@ export default function Dashboard() {
     queryFn: () => api.get('/superadmin/dashboard').then(res => res.data),
   });
 
-  if (isLoading) {
+  // Fetch tenant stats
+  const { data: tenantStats, isLoading: tenantsLoading } = useQuery<TenantStats>({
+    queryKey: ['tenantStats'],
+    queryFn: () => getTenantStats(),
+  });
+
+  // Fetch tenants list
+  const { data: tenants } = useQuery<Tenant[]>({
+    queryKey: ['tenants'],
+    queryFn: () => getTenants(),
+  });
+
+  if (isLoading || tenantsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -40,7 +54,7 @@ export default function Dashboard() {
         <AlertCircle className="w-6 h-6" />
         <div>
           <h3 className="font-bold">Connessione al backend non riuscita</h3>
-          <div className="text-sm">Assicurati che il backend EGI sia attivo su localhost:8004</div>
+          <div className="text-sm">Assicurati che il backend EGI-HUB sia attivo su localhost:8001</div>
         </div>
       </div>
     );
@@ -56,6 +70,88 @@ export default function Dashboard() {
             <p className="py-4 text-white/80">
               Centro di controllo della piattaforma FlorenceEGI
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Tenant Status Overview */}
+      <div className="card bg-base-100 shadow-xl">
+        <div className="card-body">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="card-title flex items-center gap-2">
+              <Building2 className="w-6 h-6 text-primary" />
+              Stato Tenant
+            </h2>
+            <Link to="/tenants" className="btn btn-ghost btn-sm">
+              Vedi tutti →
+            </Link>
+          </div>
+          
+          {/* Tenant Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="stat bg-base-200 rounded-box p-4">
+              <div className="stat-title text-xs">Totale</div>
+              <div className="stat-value text-2xl text-primary">{tenantStats?.total ?? 0}</div>
+            </div>
+            <div className="stat bg-success/10 rounded-box p-4">
+              <div className="stat-title text-xs">Attivi</div>
+              <div className="stat-value text-2xl text-success">{tenantStats?.active ?? 0}</div>
+            </div>
+            <div className="stat bg-base-300 rounded-box p-4">
+              <div className="stat-title text-xs">Inattivi</div>
+              <div className="stat-value text-2xl text-base-content/50">{tenantStats?.inactive ?? 0}</div>
+            </div>
+            <div className="stat bg-error/10 rounded-box p-4">
+              <div className="stat-title text-xs">In Errore</div>
+              <div className="stat-value text-2xl text-error">{tenantStats?.error ?? 0}</div>
+            </div>
+          </div>
+
+          {/* Tenant List */}
+          <div className="space-y-2">
+            {tenants?.slice(0, 5).map((tenant) => {
+              // Determina stato e colore
+              const isActive = tenant.status === 'active';
+              const isOnline = isActive && tenant.is_healthy;
+              const statusColor = isOnline ? 'bg-success' : 
+                                  tenant.status === 'inactive' ? 'bg-base-content/30' :
+                                  tenant.status === 'maintenance' ? 'bg-warning' : 'bg-error';
+              const statusLabel = isOnline ? 'Online' :
+                                  tenant.status === 'inactive' ? 'Inattivo' :
+                                  tenant.status === 'maintenance' ? 'Manutenzione' : 
+                                  !tenant.is_healthy ? 'Offline' : 'Errore';
+              const badgeClass = isOnline ? 'badge-success' :
+                                 tenant.status === 'inactive' ? 'badge-ghost' :
+                                 tenant.status === 'maintenance' ? 'badge-warning' : 'badge-error';
+              
+              return (
+                <div key={tenant.id} className="flex items-center justify-between p-3 bg-base-200 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full ${statusColor} ${isOnline ? 'animate-pulse' : ''}`}></div>
+                    <div>
+                      <div className="font-medium">{tenant.name}</div>
+                      <div className="text-xs text-base-content/60">{tenant.url}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`badge ${badgeClass} gap-1 badge-sm`}>
+                      {isOnline ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                      {statusLabel}
+                    </span>
+                    <Activity className="w-4 h-4 text-base-content/40" />
+                  </div>
+                </div>
+              );
+            })}
+            {(!tenants || tenants.length === 0) && (
+              <div className="text-center py-8 text-base-content/60">
+                <Building2 className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                <p>Nessun tenant registrato</p>
+                <Link to="/tenants/create" className="btn btn-primary btn-sm mt-2">
+                  Aggiungi Tenant
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
