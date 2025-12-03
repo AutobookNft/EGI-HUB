@@ -63,15 +63,15 @@ const menuGroups: MenuGroup[] = [
     ],
   },
   {
-    name: 'Tenant Management',
+    name: 'Projects',
     icon: <Building2 className="w-5 h-5" />,
     items: [
-      { name: 'Tutti i Tenant', path: '/tenants', icon: <Building2 className="w-4 h-4" /> },
-      { name: 'Nuovo Tenant', path: '/tenants/create', icon: <UserPlus className="w-4 h-4" /> },
-      { name: 'Configurazioni', path: '/tenants/configurations', icon: <Settings className="w-4 h-4" /> },
-      { name: 'Piani & Limiti', path: '/tenants/plans', icon: <FileText className="w-4 h-4" /> },
-      { name: 'Attività Tenant', path: '/tenants/activity', icon: <Activity className="w-4 h-4" /> },
-      { name: 'Database & Storage', path: '/tenants/storage', icon: <Database className="w-4 h-4" /> },
+      { name: 'Tutti i Projects', path: '/projects', icon: <Building2 className="w-4 h-4" /> },
+      { name: 'Nuovo Project', path: '/projects/create', icon: <UserPlus className="w-4 h-4" /> },
+      { name: 'Configurazioni', path: '/projects/configurations', icon: <Settings className="w-4 h-4" /> },
+      { name: 'Piani & Limiti', path: '/projects/plans', icon: <FileText className="w-4 h-4" /> },
+      { name: 'Attività Projects', path: '/projects/activity', icon: <Activity className="w-4 h-4" /> },
+      { name: 'Database & Storage', path: '/projects/storage', icon: <Database className="w-4 h-4" /> },
     ],
   },
   {

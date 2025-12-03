@@ -10,12 +10,20 @@ declare(strict_types=1);
  * 
  * @package EGI-HUB
  * @author Fabio Cherici
- * @version 1.0.0
- * @date 2025-12-01
+ * @version 1.1.0
+ * @date 2025-12-03
+ * 
+ * NOTA: "Projects" in EGI-HUB sono le applicazioni SaaS (NATAN_LOC, EGI, etc.)
+ * mentre "Tenants" sono i clienti finali di ogni progetto.
  */
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AggregationController;
+use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\ProjectProxyController;
+use App\Http\Controllers\Api\ProjectActivityController;
+
+// Legacy aliases (deprecated, use projects instead)
 use App\Http\Controllers\Api\TenantController;
 use App\Http\Controllers\Api\TenantProxyController;
 use App\Http\Controllers\Api\TenantActivityController;
@@ -170,10 +178,39 @@ Route::prefix('aggregations')->name('aggregations.')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Tenants Management API
+| Projects Management API (NEW - Primary)
 |--------------------------------------------------------------------------
-| Routes for managing tenants (applications) in the EGI-HUB ecosystem.
+| Routes for managing projects (SaaS applications) in the EGI-HUB ecosystem.
+| Projects = NATAN_LOC, FlorenceArtEGI, etc.
 | Only accessible by SuperAdmin.
+*/
+Route::prefix('projects')->name('projects.')->group(function () {
+    // CRUD operations
+    Route::get('/', [ProjectController::class, 'index'])->name('index');
+    Route::post('/', [ProjectController::class, 'store'])->name('store');
+    Route::get('stats', [ProjectController::class, 'stats'])->name('stats');
+    Route::get('{project}', [ProjectController::class, 'show'])->name('show');
+    Route::put('{project}', [ProjectController::class, 'update'])->name('update');
+    Route::delete('{project}', [ProjectController::class, 'destroy'])->name('destroy');
+    
+    // Health checks
+    Route::get('{project}/health', [ProjectController::class, 'healthCheck'])->name('health');
+    Route::post('health-check-all', [ProjectController::class, 'healthCheckAll'])->name('health-all');
+    
+    // Service control (Start/Stop)
+    Route::post('{project}/start', [ProjectController::class, 'start'])->name('start');
+    Route::post('{project}/stop', [ProjectController::class, 'stop'])->name('stop');
+    
+    // Project activities
+    Route::get('{project}/activities', [ProjectActivityController::class, 'forProject'])->name('activities');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Tenants Management API (LEGACY - Deprecated, use /projects instead)
+|--------------------------------------------------------------------------
+| Maintained for backward compatibility.
+| Will be removed in future versions.
 */
 Route::prefix('tenants')->name('tenants.')->group(function () {
     // CRUD operations
@@ -198,42 +235,42 @@ Route::prefix('tenants')->name('tenants.')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Tenant Activities API
+| Project Activities API
 |--------------------------------------------------------------------------
-| Routes for viewing and analyzing tenant activities.
+| Routes for viewing and analyzing project activities.
 */
 Route::prefix('activities')->name('activities.')->group(function () {
-    Route::get('/', [TenantActivityController::class, 'index'])->name('index');
-    Route::get('stats', [TenantActivityController::class, 'stats'])->name('stats');
-    Route::get('recent', [TenantActivityController::class, 'recent'])->name('recent');
-    Route::get('timeline', [TenantActivityController::class, 'timeline'])->name('timeline');
+    Route::get('/', [ProjectActivityController::class, 'index'])->name('index');
+    Route::get('stats', [ProjectActivityController::class, 'stats'])->name('stats');
+    Route::get('recent', [ProjectActivityController::class, 'recent'])->name('recent');
+    Route::get('timeline', [ProjectActivityController::class, 'timeline'])->name('timeline');
 });
 
 /*
 |--------------------------------------------------------------------------
-| Tenant Proxy API
+| Project Proxy API
 |--------------------------------------------------------------------------
-| Routes for proxying requests to tenant APIs.
-| EGI-HUB acts as intermediary between frontend and tenant backends.
+| Routes for proxying requests to project APIs.
+| EGI-HUB acts as intermediary between frontend and project backends.
 */
 Route::prefix('proxy')->name('proxy.')->group(function () {
-    // Aggregate data from all tenants
-    Route::get('aggregate', [TenantProxyController::class, 'aggregate'])->name('aggregate');
+    // Aggregate data from all projects
+    Route::get('aggregate', [ProjectProxyController::class, 'aggregate'])->name('aggregate');
     
-    // Proxy to specific tenant
-    Route::get('{tenantSlug}/{path?}', [TenantProxyController::class, 'get'])
+    // Proxy to specific project
+    Route::get('{projectSlug}/{path?}', [ProjectProxyController::class, 'get'])
         ->where('path', '.*')
         ->name('get');
-    Route::post('{tenantSlug}/{path?}', [TenantProxyController::class, 'post'])
+    Route::post('{projectSlug}/{path?}', [ProjectProxyController::class, 'post'])
         ->where('path', '.*')
         ->name('post');
-    Route::put('{tenantSlug}/{path?}', [TenantProxyController::class, 'put'])
+    Route::put('{projectSlug}/{path?}', [ProjectProxyController::class, 'put'])
         ->where('path', '.*')
         ->name('put');
-    Route::patch('{tenantSlug}/{path?}', [TenantProxyController::class, 'patch'])
+    Route::patch('{projectSlug}/{path?}', [ProjectProxyController::class, 'patch'])
         ->where('path', '.*')
         ->name('patch');
-    Route::delete('{tenantSlug}/{path?}', [TenantProxyController::class, 'delete'])
+    Route::delete('{projectSlug}/{path?}', [ProjectProxyController::class, 'delete'])
         ->where('path', '.*')
         ->name('delete');
 });

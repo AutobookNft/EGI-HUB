@@ -27,9 +27,11 @@ import PadminSymbols from './pages/padmin/Symbols'
 import PadminSearch from './pages/padmin/Search'
 import PadminStatistics from './pages/padmin/Statistics'
 
-// Tenant Management
-import TenantsList from './pages/tenants/TenantsList'
-import CreateTenant from './pages/tenants/CreateTenant'
+// Project Management (was Tenant Management - renamed for clarity)
+// NOTE: In EGI-HUB, "Projects" are SaaS applications (NATAN_LOC, EGI, etc.)
+// "Tenants" are the end customers within each project (Comuni, Gallerie, etc.)
+import ProjectsList from './pages/projects/ProjectsList'
+import CreateProject from './pages/projects/CreateProject'
 import TenantConfigurations from './pages/tenants/TenantConfigurations'
 import TenantPlans from './pages/tenants/TenantPlans'
 import TenantActivity from './pages/tenants/TenantActivity'
@@ -72,13 +74,17 @@ function App() {
         <Route path="padmin/search" element={<PadminSearch />} />
         <Route path="padmin/statistics" element={<PadminStatistics />} />
         
-        {/* Tenant Management */}
-        <Route path="tenants" element={<TenantsList />} />
-        <Route path="tenants/create" element={<CreateTenant />} />
-        <Route path="tenants/configurations" element={<TenantConfigurations />} />
-        <Route path="tenants/plans" element={<TenantPlans />} />
-        <Route path="tenants/activity" element={<TenantActivity />} />
-        <Route path="tenants/storage" element={<TenantStorage />} />
+        {/* Project Management (SaaS applications: NATAN_LOC, EGI, etc.) */}
+        <Route path="projects" element={<ProjectsList />} />
+        <Route path="projects/create" element={<CreateProject />} />
+        <Route path="projects/configurations" element={<TenantConfigurations />} />
+        <Route path="projects/plans" element={<TenantPlans />} />
+        <Route path="projects/activity" element={<TenantActivity />} />
+        <Route path="projects/storage" element={<TenantStorage />} />
+        
+        {/* Legacy routes (deprecated, kept for backward compatibility) */}
+        <Route path="tenants" element={<ProjectsList />} />
+        <Route path="tenants/create" element={<CreateProject />} />
         
         {/* System Settings */}
         <Route path="system/config" element={<SystemConfig />} />
