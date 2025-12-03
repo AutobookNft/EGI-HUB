@@ -131,7 +131,7 @@ export default function TenantActivity() {
   });
 
   // Handler per Start tenant
-  const handleStartTenant = async (tenantId: number, tenantName: string) => {
+  const handleStartTenant = async (tenantId: number, _tenantName: string) => {
     try {
       const response = await fetch(`/api/tenants/${tenantId}/start`, { method: 'POST' });
       const data = await response.json();
