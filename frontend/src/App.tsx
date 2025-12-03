@@ -32,9 +32,9 @@ import PadminStatistics from './pages/padmin/Statistics'
 // "Tenants" are the end customers within each project (Comuni, Gallerie, etc.)
 import ProjectsList from './pages/projects/ProjectsList'
 import CreateProject from './pages/projects/CreateProject'
+import ProjectActivity from './pages/projects/ProjectActivity'
 import TenantConfigurations from './pages/tenants/TenantConfigurations'
 import TenantPlans from './pages/tenants/TenantPlans'
-import TenantActivity from './pages/tenants/TenantActivity'
 import TenantStorage from './pages/tenants/TenantStorage'
 
 // System Settings
@@ -79,7 +79,7 @@ function App() {
         <Route path="projects/create" element={<CreateProject />} />
         <Route path="projects/configurations" element={<TenantConfigurations />} />
         <Route path="projects/plans" element={<TenantPlans />} />
-        <Route path="projects/activity" element={<TenantActivity />} />
+        <Route path="projects/activity" element={<ProjectActivity />} />
         <Route path="projects/storage" element={<TenantStorage />} />
         
         {/* Legacy routes (deprecated, kept for backward compatibility) */}
