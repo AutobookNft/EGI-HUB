@@ -35,7 +35,7 @@ Questo pattern è utilizzato da piattaforme enterprise come:
 - **Shopify** (Core Commerce + Apps ecosystem)
 - **Salesforce** (Core CRM + Clouds verticali)
 
-**La differenza fondamentale:** nel nostro caso il "dato base" non è il CRM o il Commerce, ma l'**EGI** (Encrypted Genuine Item) - l'unità digitale che rappresenta asset autenticati, ancorati su blockchain e validati da AI.
+**La differenza fondamentale:** nel nostro caso il "dato base" non è il CRM o il Commerce, ma l'**EGI** (Eco Goods Invent) - certificati digitali che uniscono valore estetico, traccia blockchain immutabile e contributo ambientale verificabile.
 
 ---
 
@@ -135,23 +135,31 @@ MTS-Core = Mono-Tenant System Core + Multi-Tenant Subdomains
 
 ### Cos'è un EGI?
 
-**EGI** = **E**ncrypted **G**enuine **I**tem
+**EGI** = **E**co **G**oods **I**nvent
 
-Un EGI è l'unità fondamentale dell'ecosistema FlorenceEGI. Rappresenta:
+Un EGI è un **certificato digitale** che unisce tre componenti fondamentali:
 
-- **Asset Digitale Autenticato**: Qualsiasi contenuto digitale con prova di autenticità
-- **Ancoraggio Blockchain**: Hash del contenuto scritto su Algorand
-- **Validazione AI**: Verifica automatica di autenticità e integrità
-- **Ownership Tracciabile**: Storico completo della proprietà
+| Componente | Significato | Descrizione |
+|------------|-------------|-------------|
+| **EPP** | Environmental Protection Programs | Contributo ambientale automatico ad ogni transazione |
+| **GOODS** | Beni e Valore Tangibile | Opere d'arte, servizi, diritti, utilità concrete nel mondo reale |
+| **INVENT** | Innovazione Certificata | Smart contract, utilità dinamiche, governance partecipativa |
+
+Un EGI rappresenta:
+
+- **Impatto Ambientale Positivo**: Contributo EPP integrato nativamente in ogni transazione
+- **Valore Reale**: Beni, servizi e utilità concrete nel mondo reale
+- **Innovazione Tecnologica**: Smart contract e governance partecipativa
+- **Tracciabilità Blockchain**: Hash del contenuto ancorato su Algorand
 
 ### Casi d'Uso EGI
 
-| Progetto | Tipo EGI | Esempio |
-|----------|----------|---------|
-| **FlorenceArtEGI** | Opera d'arte digitale | NFT di un dipinto |
-| **NATAN_LOC** | Documento PA | Delibera comunale certificata |
-| **[Futuro]** | Certificato | Diploma universitario |
-| **[Futuro]** | Prodotto | Certificato autenticità Made in Italy |
+| Progetto | Tipo EGI | EPP | GOODS | INVENT |
+|----------|----------|-----|-------|--------|
+| **FlorenceArtEGI** | Opera d'arte | Contributo ambientale per transazione | Opera artistica certificata | Smart contract di royalty |
+| **NATAN_LOC** | Documento PA | Carbon offset per documento | Delibera comunale autentica | Governance trasparente |
+| **[Futuro]** | Certificato | Crediti verdi | Diploma universitario | Verifica automatica |
+| **[Futuro]** | Prodotto | Traccia ecologica | Made in Italy certificato | Supply chain verificabile |
 
 ### Database EGI Core (PostgreSQL)
 
@@ -518,7 +526,10 @@ CREATE TABLE aggregation_members (
 
 | Termine | Definizione |
 |---------|-------------|
-| **EGI** | Encrypted Genuine Item - unità digitale autenticata |
+| **EGI** | Eco Goods Invent - certificato digitale che unisce contributo ambientale (EPP), valore tangibile (GOODS) e innovazione tecnologica (INVENT) |
+| **EPP** | Environmental Protection Programs - contributo ambientale automatico |
+| **GOODS** | Beni e valore tangibile: opere d'arte, servizi, diritti |
+| **INVENT** | Innovazione certificata: smart contract, governance partecipativa |
 | **Project** | Applicazione SaaS nell'ecosistema (NATAN_LOC, EGI, ...) |
 | **Tenant** | Cliente finale di un Project (Comune, Galleria, ...) |
 | **Branch** | Suddivisione di un Tenant (Settore, Ufficio, ...) |
