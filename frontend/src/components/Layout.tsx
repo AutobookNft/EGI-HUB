@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { useState, useMemo } from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Brain,
@@ -34,8 +34,13 @@ import {
   Lock,
   Bell,
   Wrench,
-  FolderOpen
+  FolderOpen,
+  ArrowLeft,
+  Home
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useProject } from '../contexts/ProjectContext';
+import ProjectSelector from './ProjectSelector';
 
 interface MenuItem {
   name: string;
@@ -50,18 +55,14 @@ interface MenuGroup {
 }
 
 /**
- * EGI-HUB SuperAdmin Layout
- * 
- * Replica esatta della struttura enterprise-sidebar di EGI
- * @see /home/fabio/dev/EGI/app/Services/Menu/ContextMenus.php
+ * Menu globale SuperAdmin (quando nessun progetto è selezionato)
  */
-const menuGroups: MenuGroup[] = [
+const globalMenuGroups: MenuGroup[] = [
   {
     name: 'Overview',
     icon: <LayoutDashboard className="w-5 h-5" />,
     items: [
       { name: 'Dashboard', path: '/', icon: <LayoutDashboard className="w-4 h-4" /> },
-      { name: 'I Miei Progetti', path: '/my-projects', icon: <FolderOpen className="w-4 h-4" /> },
     ],
   },
   {
@@ -128,14 +129,63 @@ const menuGroups: MenuGroup[] = [
   },
 ];
 
+/**
+ * Genera il menu per un progetto specifico
+ */
+const getProjectMenuGroups = (projectSlug: string): MenuGroup[] => [
+  {
+    name: 'Project',
+    icon: <FolderOpen className="w-5 h-5" />,
+    items: [
+      { name: 'Dashboard', path: `/project/${projectSlug}`, icon: <LayoutDashboard className="w-4 h-4" /> },
+      { name: 'Attività', path: `/project/${projectSlug}/activity`, icon: <Activity className="w-4 h-4" /> },
+    ],
+  },
+  {
+    name: 'Tenants',
+    icon: <Building2 className="w-5 h-5" />,
+    items: [
+      { name: 'Lista Tenants', path: `/project/${projectSlug}/tenants`, icon: <Building2 className="w-4 h-4" /> },
+      { name: 'Nuovo Tenant', path: `/project/${projectSlug}/tenants/create`, icon: <UserPlus className="w-4 h-4" /> },
+    ],
+  },
+  {
+    name: 'Configurazione',
+    icon: <Settings className="w-5 h-5" />,
+    items: [
+      { name: 'Impostazioni', path: `/project/${projectSlug}/settings`, icon: <Settings className="w-4 h-4" /> },
+      { name: 'Integrazioni', path: `/project/${projectSlug}/integrations`, icon: <Globe className="w-4 h-4" /> },
+    ],
+  },
+  {
+    name: 'Amministrazione',
+    icon: <Users className="w-5 h-5" />,
+    items: [
+      { name: 'Project Admins', path: `/project/${projectSlug}/admins`, icon: <Users className="w-4 h-4" /> },
+      { name: 'Permessi', path: `/project/${projectSlug}/permissions`, icon: <Lock className="w-4 h-4" /> },
+    ],
+  },
+];
+
 export default function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const { currentProject, selectProject, isSuperAdmin } = useProject();
+  
+  // Determina quale menu mostrare
+  const menuGroups = useMemo(() => {
+    if (currentProject) {
+      return getProjectMenuGroups(currentProject.slug);
+    }
+    return globalMenuGroups;
+  }, [currentProject]);
+
   const [openGroups, setOpenGroups] = useState<string[]>(() => {
-    // Apri automaticamente il gruppo che contiene la route corrente
     const activeGroup = menuGroups.find(group => 
       group.items.some(item => item.path === location.pathname)
     );
-    return activeGroup ? [activeGroup.name] : ['Overview'];
+    return activeGroup ? [activeGroup.name] : [menuGroups[0]?.name || 'Overview'];
   });
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -150,6 +200,16 @@ export default function Layout() {
   const isActive = (path: string) => location.pathname === path;
   const isGroupActive = (group: MenuGroup) => 
     group.items.some(item => location.pathname === item.path);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  const handleExitProject = () => {
+    selectProject(null);
+    navigate('/');
+  };
 
   return (
     <div className="min-h-screen bg-base-200">
@@ -175,12 +235,32 @@ export default function Layout() {
         `}
       >
         <div className="flex flex-col h-full">
-          {/* Logo & Badge */}
+          {/* Logo & Context */}
           <div className="p-6 text-center border-b border-white/10">
-            <h1 className="text-2xl font-bold text-white">EGI-HUB</h1>
-            <span className="inline-block px-3 py-1 mt-2 text-xs font-semibold rounded-full bg-white/10 text-white/90">
-              SuperAdmin
-            </span>
+            {currentProject ? (
+              <>
+                {/* Project Context Header */}
+                <button
+                  onClick={handleExitProject}
+                  className="flex items-center gap-2 text-white/70 hover:text-white text-sm mb-2 mx-auto"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Torna a EGI-HUB</span>
+                </button>
+                <h1 className="text-xl font-bold text-white truncate">{currentProject.name}</h1>
+                <span className="inline-block px-3 py-1 mt-2 text-xs font-semibold rounded-full bg-primary/20 text-primary-content">
+                  {currentProject.access?.role_label || 'Project'}
+                </span>
+              </>
+            ) : (
+              <>
+                {/* Global Context Header */}
+                <h1 className="text-2xl font-bold text-white">EGI-HUB</h1>
+                <span className="inline-block px-3 py-1 mt-2 text-xs font-semibold rounded-full bg-white/10 text-white/90">
+                  {isSuperAdmin ? 'Super Admin' : 'Admin'}
+                </span>
+              </>
+            )}
           </div>
 
           {/* Menu Navigation */}
@@ -244,13 +324,22 @@ export default function Layout() {
             })}
           </nav>
 
-          {/* Logout Button */}
-          <div className="px-4 py-4">
+          {/* User Info & Logout */}
+          <div className="px-4 py-4 space-y-3">
+            {/* User Badge */}
+            <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/5">
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm">
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+                <p className="text-xs text-white/60 truncate">{user?.email}</p>
+              </div>
+            </div>
+
+            {/* Logout Button */}
             <button
-              onClick={() => {
-                // TODO: Implementare logout
-                console.log('Logout');
-              }}
+              onClick={handleLogout}
               className="flex items-center w-full gap-3 px-4 py-3 text-sm font-medium text-white transition-colors duration-150 bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
             >
               <LogOut className="w-5 h-5" />
@@ -267,9 +356,7 @@ export default function Layout() {
       </aside>
 
       {/* Main Content */}
-      <main
-        className="min-h-screen transition-all duration-300 lg:ml-80"
-      >
+      <main className="min-h-screen transition-all duration-300 lg:ml-80">
         {/* Overlay for mobile */}
         {sidebarOpen && (
           <div
@@ -277,6 +364,31 @@ export default function Layout() {
             onClick={() => setSidebarOpen(false)}
           />
         )}
+
+        {/* Top Bar with Project Selector */}
+        <div className="sticky top-0 z-20 bg-base-100 border-b border-base-300 px-6 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* Breadcrumb */}
+              {currentProject && (
+                <div className="hidden md:flex items-center gap-2 text-sm text-base-content/60">
+                  <button 
+                    onClick={handleExitProject}
+                    className="hover:text-primary flex items-center gap-1"
+                  >
+                    <Home className="w-4 h-4" />
+                    EGI-HUB
+                  </button>
+                  <ChevronRight className="w-4 h-4" />
+                  <span className="text-base-content font-medium">{currentProject.name}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Right side - Project Selector */}
+            <ProjectSelector />
+          </div>
+        </div>
 
         {/* Page Content */}
         <div className="p-6 lg:p-8">

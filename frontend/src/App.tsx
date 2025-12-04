@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import ComingSoon from './pages/ComingSoon'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { ProjectProvider } from './contexts/ProjectContext'
 
 // Auth Pages
 import Login from './pages/auth/Login'
@@ -32,18 +33,19 @@ import PadminSymbols from './pages/padmin/Symbols'
 import PadminSearch from './pages/padmin/Search'
 import PadminStatistics from './pages/padmin/Statistics'
 
-// Project Management (was Tenant Management - renamed for clarity)
+// Global Project Management (SuperAdmin)
 // NOTE: In EGI-HUB, "Projects" are SaaS applications (NATAN_LOC, EGI, etc.)
 // "Tenants" are the end customers within each project (Comuni, Gallerie, etc.)
 import ProjectsList from './pages/projects/ProjectsList'
 import CreateProject from './pages/projects/CreateProject'
 import ProjectActivity from './pages/projects/ProjectActivity'
-import MyProjects from './pages/projects/MyProjects'
-import ProjectDashboard from './pages/projects/ProjectDashboard'
 import ProjectAdminsList from './pages/projects/ProjectAdminsList'
 import TenantConfigurations from './pages/tenants/TenantConfigurations'
 import TenantPlans from './pages/tenants/TenantPlans'
 import TenantStorage from './pages/tenants/TenantStorage'
+
+// Project Context Pages (when inside a specific project)
+import ProjectDashboard from './pages/projects/ProjectDashboard'
 
 // System Settings
 import SystemConfig from './pages/system/SystemConfig'
@@ -83,7 +85,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
   
   if (isAuthenticated) {
-    return <Navigate to="/my-projects" replace />;
+    return <Navigate to="/" replace />;
   }
   
   return <>{children}</>;
@@ -110,6 +112,10 @@ function AppRoutes() {
           <Layout />
         </ProtectedRoute>
       }>
+        {/* ============================================ */}
+        {/* GLOBAL CONTEXT (No project selected)        */}
+        {/* ============================================ */}
+        
         {/* Overview */}
         <Route index element={<Dashboard />} />
         
@@ -137,7 +143,7 @@ function AppRoutes() {
         <Route path="padmin/search" element={<PadminSearch />} />
         <Route path="padmin/statistics" element={<PadminStatistics />} />
         
-        {/* Project Management (SaaS applications: NATAN_LOC, EGI, etc.) */}
+        {/* Global Project Management (SuperAdmin only) */}
         <Route path="projects" element={<ProjectsList />} />
         <Route path="projects/create" element={<CreateProject />} />
         <Route path="projects/configurations" element={<TenantConfigurations />} />
@@ -145,22 +151,38 @@ function AppRoutes() {
         <Route path="projects/activity" element={<ProjectActivity />} />
         <Route path="projects/storage" element={<TenantStorage />} />
         
-        {/* My Projects (user's accessible projects) */}
-        <Route path="my-projects" element={<MyProjects />} />
-        
-        {/* Project Admin Routes (inside a project) */}
-        <Route path="projects/:slug/dashboard" element={<ProjectDashboard />} />
-        <Route path="projects/:slug/admins" element={<ProjectAdminsList />} />
-        
-        {/* Legacy routes (deprecated, kept for backward compatibility) */}
-        <Route path="tenants" element={<ProjectsList />} />
-        <Route path="tenants/create" element={<CreateProject />} />
-        
         {/* System Settings */}
         <Route path="system/config" element={<SystemConfig />} />
         <Route path="system/domains" element={<SystemDomains />} />
         <Route path="system/security" element={<SystemSecurity />} />
         <Route path="system/notifications" element={<SystemNotifications />} />
+        
+        {/* ============================================ */}
+        {/* PROJECT CONTEXT (Inside a specific project) */}
+        {/* ============================================ */}
+        
+        {/* Project Dashboard */}
+        <Route path="project/:slug" element={<ProjectDashboard />} />
+        <Route path="project/:slug/activity" element={<ComingSoon title="Attività Progetto" />} />
+        
+        {/* Tenants Management (inside project) */}
+        <Route path="project/:slug/tenants" element={<ComingSoon title="Lista Tenants" />} />
+        <Route path="project/:slug/tenants/create" element={<ComingSoon title="Nuovo Tenant" />} />
+        
+        {/* Project Settings */}
+        <Route path="project/:slug/settings" element={<ComingSoon title="Impostazioni Progetto" />} />
+        <Route path="project/:slug/integrations" element={<ComingSoon title="Integrazioni" />} />
+        
+        {/* Project Admin */}
+        <Route path="project/:slug/admins" element={<ProjectAdminsList />} />
+        <Route path="project/:slug/permissions" element={<ComingSoon title="Permessi" />} />
+        
+        {/* Legacy routes (deprecated) */}
+        <Route path="tenants" element={<ProjectsList />} />
+        <Route path="tenants/create" element={<CreateProject />} />
+        <Route path="my-projects" element={<Navigate to="/" replace />} />
+        <Route path="projects/:slug/dashboard" element={<Navigate to="/project/:slug" replace />} />
+        <Route path="projects/:slug/admins" element={<Navigate to="/project/:slug/admins" replace />} />
         
         {/* Catch-all for unimplemented routes */}
         <Route path="*" element={<ComingSoon title="Coming Soon" />} />
@@ -172,7 +194,9 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <AppRoutes />
+      <ProjectProvider>
+        <AppRoutes />
+      </ProjectProvider>
     </AuthProvider>
   );
 }
