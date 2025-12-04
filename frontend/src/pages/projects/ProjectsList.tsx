@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { FolderKanban, Plus, Search, Filter, MoreVertical, RefreshCw, CheckCircle, XCircle, Clock, AlertTriangle, Activity, ExternalLink, Play, Square } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { FolderKanban, Plus, Search, Filter, MoreVertical, RefreshCw, CheckCircle, XCircle, Clock, AlertTriangle, Activity, ExternalLink, Play, Square, ArrowRight } from 'lucide-react';
 import { getProjects, getProjectStats, checkProjectHealth, startProject, stopProject } from '@/services/projectApi';
+import { useProject } from '@/contexts/ProjectContext';
 import type { Project, ProjectStats } from '@/types/project';
 
 /**
@@ -13,6 +14,9 @@ import type { Project, ProjectStats } from '@/types/project';
  * mentre i "Tenants" sono i clienti finali di ogni progetto.
  */
 export default function ProjectsList() {
+  const navigate = useNavigate();
+  const { projects: myProjects, selectProject } = useProject();
+  
   const [projects, setProjects] = useState<Project[]>([]);
   const [stats, setStats] = useState<ProjectStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,6 +29,29 @@ export default function ProjectsList() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Funzione per entrare nel contesto di un progetto
+  const handleEnterProject = (project: Project) => {
+    // Trova il progetto nella lista dei "miei progetti" per avere i dati di accesso
+    const myProject = myProjects.find(p => p.slug === project.slug);
+    if (myProject) {
+      selectProject(myProject);
+      navigate(`/project/${project.slug}`);
+    } else {
+      // Fallback: crea un oggetto MyProject base
+      selectProject({
+        id: project.id,
+        name: project.name,
+        slug: project.slug,
+        description: project.description,
+        url: project.url,
+        status: project.status,
+        is_healthy: project.is_healthy,
+        access: null
+      });
+      navigate(`/project/${project.slug}`);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -308,17 +335,30 @@ export default function ProjectsList() {
                     </div>
                   </td>
                   <td>
-                    <div className="dropdown dropdown-end">
-                      <label tabIndex={0} className="btn btn-ghost btn-sm btn-square">
-                        <MoreVertical className="w-4 h-4" />
-                      </label>
-                      <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
-                        <li><Link to={`/projects/${project.id}`}>Visualizza Dettagli</Link></li>
-                        <li><a onClick={() => handleHealthCheck(project.id)}>Verifica Health</a></li>
-                        <li><a href={project.url} target="_blank" rel="noopener noreferrer">Apri Progetto</a></li>
-                        <li><Link to={`/projects/${project.id}/edit`}>Modifica</Link></li>
-                        <li className="text-error"><a>Elimina Progetto</a></li>
-                      </ul>
+                    <div className="flex items-center gap-2">
+                      {/* Entra nel progetto */}
+                      <button
+                        onClick={() => handleEnterProject(project)}
+                        className="btn btn-primary btn-sm gap-1"
+                        title="Entra nel progetto"
+                      >
+                        <ArrowRight className="w-4 h-4" />
+                        Entra
+                      </button>
+                      
+                      {/* Menu azioni */}
+                      <div className="dropdown dropdown-end">
+                        <label tabIndex={0} className="btn btn-ghost btn-sm btn-square">
+                          <MoreVertical className="w-4 h-4" />
+                        </label>
+                        <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                          <li><Link to={`/projects/${project.id}`}>Visualizza Dettagli</Link></li>
+                          <li><a onClick={() => handleHealthCheck(project.id)}>Verifica Health</a></li>
+                          <li><a href={project.url} target="_blank" rel="noopener noreferrer">Apri Progetto</a></li>
+                          <li><Link to={`/projects/${project.id}/edit`}>Modifica</Link></li>
+                          <li className="text-error"><a>Elimina Progetto</a></li>
+                        </ul>
+                      </div>
                     </div>
                   </td>
                 </tr>

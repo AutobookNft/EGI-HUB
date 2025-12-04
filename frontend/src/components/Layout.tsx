@@ -40,7 +40,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useProject } from '../contexts/ProjectContext';
-import ProjectSelector from './ProjectSelector';
 
 interface MenuItem {
   name: string;
@@ -369,9 +368,9 @@ export default function Layout() {
         <div className="sticky top-0 z-20 bg-base-100 border-b border-base-300 px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              {/* Breadcrumb */}
+              {/* Breadcrumb - mostrato solo quando si è in un progetto */}
               {currentProject && (
-                <div className="hidden md:flex items-center gap-2 text-sm text-base-content/60">
+                <div className="flex items-center gap-2 text-sm text-base-content/60">
                   <button 
                     onClick={handleExitProject}
                     className="hover:text-primary flex items-center gap-1"
@@ -385,8 +384,15 @@ export default function Layout() {
               )}
             </div>
 
-            {/* Right side - Project Selector */}
-            <ProjectSelector />
+            {/* Right side - User info */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-base-content/70 hidden sm:inline">
+                {user?.email}
+              </span>
+              {isSuperAdmin && (
+                <span className="badge badge-warning badge-sm">Super Admin</span>
+              )}
+            </div>
           </div>
         </div>
 
