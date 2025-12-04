@@ -5,23 +5,22 @@
  * Shows project stats, tenant management, and quick actions.
  */
 
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { 
-  ArrowLeftIcon,
-  UserGroupIcon,
-  Cog6ToothIcon,
-  ChartBarIcon,
-  DocumentTextIcon,
-  ShieldCheckIcon,
-  ServerIcon,
-  CheckCircleIcon,
-  ExclamationCircleIcon,
-  ArrowPathIcon,
-  UsersIcon
-} from '@heroicons/react/24/outline';
-import { getProject, checkProjectHealth } from '../../services/projectApi';
-import type { Project, ProjectHealthCheck } from '../../types/project';
+  ArrowLeft,
+  Users,
+  Settings,
+  BarChart3,
+  FileText,
+  ShieldCheck,
+  Server,
+  CheckCircle,
+  AlertCircle,
+  RefreshCw
+} from 'lucide-react';
+import { getProjects, checkProjectHealth } from '../../services/projectApi';
+import type { Project } from '../../types/project';
 
 interface DashboardCard {
   title: string;
@@ -33,10 +32,8 @@ interface DashboardCard {
 
 export default function ProjectDashboard() {
   const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
   
   const [project, setProject] = useState<Project | null>(null);
-  const [health, setHealth] = useState<ProjectHealthCheck | null>(null);
   const [loading, setLoading] = useState(true);
   const [healthLoading, setHealthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,13 +47,13 @@ export default function ProjectDashboard() {
   const loadProject = async () => {
     try {
       setLoading(true);
-      // For now, we'll get project by slug from the list
-      // In a real scenario, we'd have a getProjectBySlug endpoint
-      const response = await fetch(`/api/projects?slug=${slug}`);
-      const data = await response.json();
+      // Get all projects and find by slug
+      const projects = await getProjects();
+      const found = projects.find(p => p.slug === slug);
       
-      if (data.success && data.data.length > 0) {
-        setProject(data.data[0]);
+      if (found) {
+        setProject(found);
+        setError(null);
       } else {
         setError('Progetto non trovato');
       }
@@ -74,7 +71,6 @@ export default function ProjectDashboard() {
     try {
       setHealthLoading(true);
       const response = await checkProjectHealth(project.id);
-      setHealth(response.health);
       setProject(response.project);
     } catch (err) {
       console.error('Error checking health:', err);
@@ -94,7 +90,7 @@ export default function ProjectDashboard() {
   if (error || !project) {
     return (
       <div className="alert alert-error">
-        <ExclamationCircleIcon className="w-6 h-6" />
+        <AlertCircle className="w-6 h-6" />
         <span>{error || 'Progetto non trovato'}</span>
         <Link to="/my-projects" className="btn btn-sm">
           Torna ai miei progetti
@@ -106,29 +102,29 @@ export default function ProjectDashboard() {
   const dashboardCards: DashboardCard[] = [
     {
       title: 'Tenant Attivi',
-      value: '—',  // TODO: Fetch from project API
-      icon: <UserGroupIcon className="w-8 h-8" />,
+      value: '—',
+      icon: <Users className="w-8 h-8" />,
       color: 'text-primary',
       link: `/projects/${slug}/tenants`,
     },
     {
       title: 'Utenti Totali',
       value: '—',
-      icon: <UsersIcon className="w-8 h-8" />,
+      icon: <Users className="w-8 h-8" />,
       color: 'text-secondary',
       link: `/projects/${slug}/users`,
     },
     {
       title: 'API Calls (24h)',
       value: '—',
-      icon: <ChartBarIcon className="w-8 h-8" />,
+      icon: <BarChart3 className="w-8 h-8" />,
       color: 'text-accent',
       link: `/projects/${slug}/analytics`,
     },
     {
       title: 'Logs',
       value: 'Vedi',
-      icon: <DocumentTextIcon className="w-8 h-8" />,
+      icon: <FileText className="w-8 h-8" />,
       color: 'text-info',
       link: `/projects/${slug}/logs`,
     },
@@ -139,7 +135,7 @@ export default function ProjectDashboard() {
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm breadcrumbs">
         <Link to="/my-projects" className="link link-hover flex items-center gap-1">
-          <ArrowLeftIcon className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4" />
           I Miei Progetti
         </Link>
         <span>/</span>
@@ -152,7 +148,7 @@ export default function ProjectDashboard() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className={`p-3 rounded-lg ${project.is_healthy ? 'bg-success/10' : 'bg-error/10'}`}>
-                <ServerIcon className={`w-8 h-8 ${project.is_healthy ? 'text-success' : 'text-error'}`} />
+                <Server className={`w-8 h-8 ${project.is_healthy ? 'text-success' : 'text-error'}`} />
               </div>
               <div>
                 <h1 className="text-2xl font-bold">{project.name}</h1>
@@ -164,8 +160,8 @@ export default function ProjectDashboard() {
               {/* Health Status */}
               <div className={`badge ${project.is_healthy ? 'badge-success' : 'badge-error'} gap-1 badge-lg`}>
                 {project.is_healthy 
-                  ? <CheckCircleIcon className="w-4 h-4" />
-                  : <ExclamationCircleIcon className="w-4 h-4" />
+                  ? <CheckCircle className="w-4 h-4" />
+                  : <AlertCircle className="w-4 h-4" />
                 }
                 {project.is_healthy ? 'Online' : 'Offline'}
               </div>
@@ -175,7 +171,7 @@ export default function ProjectDashboard() {
                 onClick={refreshHealth}
                 disabled={healthLoading}
               >
-                <ArrowPathIcon className={`w-4 h-4 ${healthLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-4 h-4 ${healthLoading ? 'animate-spin' : ''}`} />
                 Refresh
               </button>
             </div>
@@ -223,7 +219,7 @@ export default function ProjectDashboard() {
         <div className="card bg-base-100 shadow-lg">
           <div className="card-body">
             <h2 className="card-title">
-              <UserGroupIcon className="w-5 h-5" />
+              <Users className="w-5 h-5" />
               Gestione Tenant
             </h2>
             <p className="text-base-content/70">
@@ -241,7 +237,7 @@ export default function ProjectDashboard() {
         <div className="card bg-base-100 shadow-lg">
           <div className="card-body">
             <h2 className="card-title">
-              <Cog6ToothIcon className="w-5 h-5" />
+              <Settings className="w-5 h-5" />
               Configurazione
             </h2>
             <p className="text-base-content/70">
@@ -259,7 +255,7 @@ export default function ProjectDashboard() {
         <div className="card bg-base-100 shadow-lg">
           <div className="card-body">
             <h2 className="card-title">
-              <ShieldCheckIcon className="w-5 h-5" />
+              <ShieldCheck className="w-5 h-5" />
               Project Admins
             </h2>
             <p className="text-base-content/70">
@@ -277,7 +273,7 @@ export default function ProjectDashboard() {
         <div className="card bg-base-100 shadow-lg">
           <div className="card-body">
             <h2 className="card-title">
-              <ChartBarIcon className="w-5 h-5" />
+              <BarChart3 className="w-5 h-5" />
               Analytics
             </h2>
             <p className="text-base-content/70">

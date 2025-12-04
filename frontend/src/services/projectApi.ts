@@ -264,12 +264,12 @@ export async function suspendProjectAdmin(
   slug: string,
   adminId: number,
   reason?: string
-): Promise<{ message: string }> {
-  const response = await api.post<ApiResponse<{ message: string }>>(
+): Promise<{ success: boolean; message: string }> {
+  const response = await api.post<ApiResponse<null>>(
     `/projects/${slug}/admins/${adminId}/suspend`,
     { reason }
   );
-  return response.data;
+  return { success: response.data.success, message: response.data.message || 'Sospeso' };
 }
 
 /**
@@ -278,11 +278,11 @@ export async function suspendProjectAdmin(
 export async function reactivateProjectAdmin(
   slug: string,
   adminId: number
-): Promise<{ message: string }> {
-  const response = await api.post<ApiResponse<{ message: string }>>(
+): Promise<{ success: boolean; message: string }> {
+  const response = await api.post<ApiResponse<null>>(
     `/projects/${slug}/admins/${adminId}/reactivate`
   );
-  return response.data;
+  return { success: response.data.success, message: response.data.message || 'Riattivato' };
 }
 
 // Export all admin functions together

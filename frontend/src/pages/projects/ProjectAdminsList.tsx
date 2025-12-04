@@ -5,22 +5,21 @@
  * Only Project Owners can add/modify/remove admins.
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
-  ArrowLeftIcon,
-  UserPlusIcon,
-  ShieldCheckIcon,
-  StarIcon,
-  EyeIcon,
-  PencilIcon,
-  TrashIcon,
-  PauseIcon,
-  PlayIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  ExclamationCircleIcon
-} from '@heroicons/react/24/outline';
+  UserPlus,
+  ShieldCheck,
+  Star,
+  Eye,
+  Pencil,
+  Trash2,
+  Pause,
+  Play,
+  Clock,
+  CheckCircle,
+  AlertCircle
+} from 'lucide-react';
 import { 
   getProjectAdmins, 
   deleteProjectAdmin, 
@@ -30,9 +29,9 @@ import {
 import type { ProjectAdmin, ProjectAdminRole, ProjectAdminsMeta } from '../../types/project';
 
 const roleIcons: Record<ProjectAdminRole, React.ReactNode> = {
-  owner: <StarIcon className="w-4 h-4" />,
-  admin: <ShieldCheckIcon className="w-4 h-4" />,
-  viewer: <EyeIcon className="w-4 h-4" />,
+  owner: <Star className="w-4 h-4" />,
+  admin: <ShieldCheck className="w-4 h-4" />,
+  viewer: <Eye className="w-4 h-4" />,
 };
 
 const roleBadgeColors: Record<ProjectAdminRole, string> = {
@@ -117,9 +116,10 @@ export default function ProjectAdminsList() {
       setActionLoading(admin.id);
       await deleteProjectAdmin(slug, admin.id);
       await loadAdmins();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting admin:', err);
-      alert(err.response?.data?.message || 'Impossibile rimuovere l\'admin');
+      const errorMessage = err instanceof Error ? err.message : 'Impossibile rimuovere l\'admin';
+      alert(errorMessage);
     } finally {
       setActionLoading(null);
     }
@@ -148,7 +148,7 @@ export default function ProjectAdminsList() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <ShieldCheckIcon className="w-7 h-7" />
+            <ShieldCheck className="w-7 h-7" />
             Project Admins
           </h1>
           <p className="text-base-content/70 mt-1">
@@ -160,7 +160,7 @@ export default function ProjectAdminsList() {
           to={`/projects/${slug}/admins/new`}
           className="btn btn-primary gap-2"
         >
-          <UserPlusIcon className="w-5 h-5" />
+          <UserPlus className="w-5 h-5" />
           Aggiungi Admin
         </Link>
       </div>
@@ -190,7 +190,7 @@ export default function ProjectAdminsList() {
       {/* Error */}
       {error && (
         <div className="alert alert-error">
-          <ExclamationCircleIcon className="w-6 h-6" />
+          <AlertCircle className="w-6 h-6" />
           <span>{error}</span>
           <button className="btn btn-sm" onClick={loadAdmins}>Riprova</button>
         </div>
@@ -240,17 +240,17 @@ export default function ProjectAdminsList() {
                     <td>
                       {admin.is_valid ? (
                         <div className="badge badge-success gap-1">
-                          <CheckCircleIcon className="w-3 h-3" />
+                          <CheckCircle className="w-3 h-3" />
                           Attivo
                         </div>
                       ) : admin.is_active ? (
                         <div className="badge badge-warning gap-1">
-                          <ClockIcon className="w-3 h-3" />
+                          <Clock className="w-3 h-3" />
                           Scaduto
                         </div>
                       ) : (
                         <div className="badge badge-error gap-1">
-                          <PauseIcon className="w-3 h-3" />
+                          <Pause className="w-3 h-3" />
                           Sospeso
                         </div>
                       )}
@@ -293,7 +293,7 @@ export default function ProjectAdminsList() {
                           className="btn btn-ghost btn-xs"
                           title="Modifica"
                         >
-                          <PencilIcon className="w-4 h-4" />
+                          <Pencil className="w-4 h-4" />
                         </Link>
                         
                         {/* Suspend/Reactivate */}
@@ -307,7 +307,7 @@ export default function ProjectAdminsList() {
                             {actionLoading === admin.id ? (
                               <span className="loading loading-spinner loading-xs"></span>
                             ) : (
-                              <PauseIcon className="w-4 h-4" />
+                              <Pause className="w-4 h-4" />
                             )}
                           </button>
                         ) : (
@@ -320,7 +320,7 @@ export default function ProjectAdminsList() {
                             {actionLoading === admin.id ? (
                               <span className="loading loading-spinner loading-xs"></span>
                             ) : (
-                              <PlayIcon className="w-4 h-4" />
+                              <Play className="w-4 h-4" />
                             )}
                           </button>
                         )}
@@ -335,7 +335,7 @@ export default function ProjectAdminsList() {
                           {actionLoading === admin.id ? (
                             <span className="loading loading-spinner loading-xs"></span>
                           ) : (
-                            <TrashIcon className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                           )}
                         </button>
                       </div>
@@ -350,7 +350,7 @@ export default function ProjectAdminsList() {
 
       {/* Info */}
       <div className="alert alert-info">
-        <ShieldCheckIcon className="w-6 h-6" />
+        <ShieldCheck className="w-6 h-6" />
         <div>
           <h4 className="font-bold">Gerarchia dei Ruoli</h4>
           <ul className="text-sm mt-1 space-y-1">
