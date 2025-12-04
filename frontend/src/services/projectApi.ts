@@ -15,7 +15,12 @@ import type {
   CreateProjectData, 
   UpdateProjectData,
   ApiResponse,
-  ProjectWithHealth
+  ProjectWithHealth,
+  ProjectAdmin,
+  ProjectAdminsMeta,
+  CreateProjectAdminData,
+  UpdateProjectAdminData,
+  MyProject
 } from '../types/project';
 
 /**
@@ -173,4 +178,121 @@ export const projectApi = {
   checkAllHealth: checkAllProjectsHealth,
   start: startProject,
   stop: stopProject,
+};
+
+// ==========================================
+// Project Admin API Functions
+// ==========================================
+
+/**
+ * Get my accessible projects
+ */
+export async function getMyProjects(): Promise<{ data: MyProject[]; is_super_admin: boolean }> {
+  const response = await api.get<ApiResponse<MyProject[]> & { is_super_admin: boolean }>('/my-projects');
+  return {
+    data: response.data.data,
+    is_super_admin: response.data.is_super_admin,
+  };
+}
+
+/**
+ * Get all admins for a project
+ */
+export async function getProjectAdmins(slug: string): Promise<{
+  data: ProjectAdmin[];
+  meta: ProjectAdminsMeta;
+}> {
+  const response = await api.get<ApiResponse<ProjectAdmin[]> & { meta: ProjectAdminsMeta }>(
+    `/projects/${slug}/admins`
+  );
+  return {
+    data: response.data.data,
+    meta: response.data.meta,
+  };
+}
+
+/**
+ * Get a specific project admin
+ */
+export async function getProjectAdmin(slug: string, adminId: number): Promise<ProjectAdmin> {
+  const response = await api.get<ApiResponse<ProjectAdmin>>(
+    `/projects/${slug}/admins/${adminId}`
+  );
+  return response.data.data;
+}
+
+/**
+ * Assign a new admin to a project
+ */
+export async function createProjectAdmin(
+  slug: string,
+  data: CreateProjectAdminData
+): Promise<ProjectAdmin> {
+  const response = await api.post<ApiResponse<ProjectAdmin>>(
+    `/projects/${slug}/admins`,
+    data
+  );
+  return response.data.data;
+}
+
+/**
+ * Update a project admin
+ */
+export async function updateProjectAdmin(
+  slug: string,
+  adminId: number,
+  data: UpdateProjectAdminData
+): Promise<ProjectAdmin> {
+  const response = await api.put<ApiResponse<ProjectAdmin>>(
+    `/projects/${slug}/admins/${adminId}`,
+    data
+  );
+  return response.data.data;
+}
+
+/**
+ * Remove an admin from a project
+ */
+export async function deleteProjectAdmin(slug: string, adminId: number): Promise<void> {
+  await api.delete(`/projects/${slug}/admins/${adminId}`);
+}
+
+/**
+ * Suspend a project admin
+ */
+export async function suspendProjectAdmin(
+  slug: string,
+  adminId: number,
+  reason?: string
+): Promise<{ message: string }> {
+  const response = await api.post<ApiResponse<{ message: string }>>(
+    `/projects/${slug}/admins/${adminId}/suspend`,
+    { reason }
+  );
+  return response.data;
+}
+
+/**
+ * Reactivate a suspended project admin
+ */
+export async function reactivateProjectAdmin(
+  slug: string,
+  adminId: number
+): Promise<{ message: string }> {
+  const response = await api.post<ApiResponse<{ message: string }>>(
+    `/projects/${slug}/admins/${adminId}/reactivate`
+  );
+  return response.data;
+}
+
+// Export all admin functions together
+export const projectAdminApi = {
+  getMyProjects,
+  getAdmins: getProjectAdmins,
+  getAdmin: getProjectAdmin,
+  create: createProjectAdmin,
+  update: updateProjectAdmin,
+  delete: deleteProjectAdmin,
+  suspend: suspendProjectAdmin,
+  reactivate: reactivateProjectAdmin,
 };

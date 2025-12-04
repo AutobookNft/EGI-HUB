@@ -77,3 +77,82 @@ export interface ProjectWithHealth {
   project: Project;
   health: ProjectHealthCheck;
 }
+
+// ==========================================
+// Project Admin Types
+// ==========================================
+
+export type ProjectAdminRole = 'owner' | 'admin' | 'viewer';
+
+export interface ProjectAdminPermissions {
+  can_manage_tenants: boolean;
+  can_manage_settings: boolean;
+  can_manage_admins: boolean;
+  can_view_logs: boolean;
+  can_export: boolean;
+  can_delete: boolean;
+}
+
+export interface ProjectAdminUser {
+  id: number;
+  name: string;
+  email: string;
+}
+
+export interface ProjectAdmin {
+  id: number;
+  user: ProjectAdminUser;
+  role: ProjectAdminRole;
+  role_label: string;
+  role_badge_color: string;
+  permissions: ProjectAdminPermissions;
+  is_active: boolean;
+  is_valid: boolean;
+  assigned_by: ProjectAdminUser | null;
+  assigned_at: string | null;
+  expires_at: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface ProjectAdminsMeta {
+  total: number;
+  owners: number;
+  admins: number;
+  viewers: number;
+}
+
+export interface CreateProjectAdminData {
+  user_id: number;
+  role?: ProjectAdminRole;
+  permissions?: Partial<ProjectAdminPermissions>;
+  expires_at?: string;
+  notes?: string;
+}
+
+export interface UpdateProjectAdminData {
+  role?: ProjectAdminRole;
+  permissions?: Partial<ProjectAdminPermissions>;
+  is_active?: boolean;
+  expires_at?: string | null;
+  notes?: string;
+}
+
+// My Projects (user's accessible projects)
+export interface ProjectAccess {
+  role: ProjectAdminRole | 'super_admin';
+  role_label: string;
+  permissions: ProjectAdminPermissions;
+  expires_at?: string | null;
+}
+
+export interface MyProject {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  url: string;
+  status: ProjectStatus;
+  is_healthy: boolean;
+  access: ProjectAccess | null;
+}

@@ -33,6 +33,9 @@ import PadminStatistics from './pages/padmin/Statistics'
 import ProjectsList from './pages/projects/ProjectsList'
 import CreateProject from './pages/projects/CreateProject'
 import ProjectActivity from './pages/projects/ProjectActivity'
+import MyProjects from './pages/projects/MyProjects'
+import ProjectDashboard from './pages/projects/ProjectDashboard'
+import ProjectAdminsList from './pages/projects/ProjectAdminsList'
 import TenantConfigurations from './pages/tenants/TenantConfigurations'
 import TenantPlans from './pages/tenants/TenantPlans'
 import TenantStorage from './pages/tenants/TenantStorage'
@@ -81,6 +84,13 @@ function App() {
         <Route path="projects/plans" element={<TenantPlans />} />
         <Route path="projects/activity" element={<ProjectActivity />} />
         <Route path="projects/storage" element={<TenantStorage />} />
+        
+        {/* My Projects (user's accessible projects) */}
+        <Route path="my-projects" element={<MyProjects />} />
+        
+        {/* Project Admin Routes (inside a project) */}
+        <Route path="projects/:slug/dashboard" element={<ProjectDashboard />} />
+        <Route path="projects/:slug/admins" element={<ProjectAdminsList />} />
         
         {/* Legacy routes (deprecated, kept for backward compatibility) */}
         <Route path="tenants" element={<ProjectsList />} />

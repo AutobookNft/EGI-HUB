@@ -12,7 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Registra middleware personalizzati per Project Access
+        $middleware->alias([
+            'project.access' => \App\Http\Middleware\ProjectAccess::class,
+            'project.permission' => \App\Http\Middleware\ProjectPermission::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

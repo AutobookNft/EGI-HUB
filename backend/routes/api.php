@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\AggregationController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ProjectProxyController;
 use App\Http\Controllers\Api\ProjectActivityController;
+use App\Http\Controllers\Api\ProjectAdminController;
 
 // Legacy aliases (deprecated, use projects instead)
 use App\Http\Controllers\Api\TenantController;
@@ -203,7 +204,23 @@ Route::prefix('projects')->name('projects.')->group(function () {
     
     // Project activities
     Route::get('{project}/activities', [ProjectActivityController::class, 'forProject'])->name('activities');
+    
+    // Project Admins management
+    Route::get('{slug}/admins', [ProjectAdminController::class, 'index'])->name('admins.index');
+    Route::post('{slug}/admins', [ProjectAdminController::class, 'store'])->name('admins.store');
+    Route::get('{slug}/admins/{adminId}', [ProjectAdminController::class, 'show'])->name('admins.show');
+    Route::put('{slug}/admins/{adminId}', [ProjectAdminController::class, 'update'])->name('admins.update');
+    Route::delete('{slug}/admins/{adminId}', [ProjectAdminController::class, 'destroy'])->name('admins.destroy');
+    Route::post('{slug}/admins/{adminId}/suspend', [ProjectAdminController::class, 'suspend'])->name('admins.suspend');
+    Route::post('{slug}/admins/{adminId}/reactivate', [ProjectAdminController::class, 'reactivate'])->name('admins.reactivate');
 });
+
+/*
+|--------------------------------------------------------------------------
+| My Projects API (User's accessible projects)
+|--------------------------------------------------------------------------
+*/
+Route::get('my-projects', [ProjectAdminController::class, 'myProjects'])->name('my-projects');
 
 /*
 |--------------------------------------------------------------------------

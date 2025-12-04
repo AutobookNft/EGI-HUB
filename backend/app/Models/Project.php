@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * Project Model
@@ -117,6 +118,76 @@ class Project extends Model
     public function activities(): HasMany
     {
         return $this->hasMany(ProjectActivity::class);
+    }
+
+    /**
+     * Tutti i record ProjectAdmin di questo progetto
+     */
+    public function adminRecords(): HasMany
+    {
+        return $this->hasMany(ProjectAdmin::class);
+    }
+
+    /**
+     * Tutti gli utenti che hanno accesso a questo progetto
+     */
+    public function admins(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'project_admins')
+                    ->withPivot(['role', 'permissions', 'is_active', 'expires_at'])
+                    ->withTimestamps();
+    }
+
+    /**
+     * Utenti con accesso attivo
+     */
+    public function activeAdmins(): BelongsToMany
+    {
+        return $this->admins()
+                    ->wherePivot('is_active', true)
+                    ->where(function ($query) {
+                        $query->whereNull('project_admins.expires_at')
+                              ->orWhere('project_admins.expires_at', '>', now());
+                    });
+    }
+
+    /**
+     * Owner del progetto
+     */
+    public function owners(): BelongsToMany
+    {
+        return $this->activeAdmins()->wherePivot('role', ProjectAdmin::ROLE_OWNER);
+    }
+
+    /**
+     * Assegna un utente come admin del progetto
+     */
+    public function assignAdmin(
+        User $user,
+        string $role = ProjectAdmin::ROLE_VIEWER,
+        ?array $permissions = null,
+        ?User $assignedBy = null,
+        ?\DateTimeInterface $expiresAt = null
+    ): ProjectAdmin {
+        return ProjectAdmin::create([
+            'project_id' => $this->id,
+            'user_id' => $user->id,
+            'role' => $role,
+            'permissions' => $permissions,
+            'assigned_by' => $assignedBy?->id,
+            'expires_at' => $expiresAt,
+            'is_active' => true,
+        ]);
+    }
+
+    /**
+     * Rimuovi l'accesso di un utente
+     */
+    public function removeAdmin(User $user): bool
+    {
+        return $this->adminRecords()
+                    ->where('user_id', $user->id)
+                    ->delete() > 0;
     }
 
     // =========================================================================

@@ -33,7 +33,8 @@ import {
   Globe,
   Lock,
   Bell,
-  Wrench
+  Wrench,
+  FolderOpen
 } from 'lucide-react';
 
 interface MenuItem {
@@ -60,6 +61,7 @@ const menuGroups: MenuGroup[] = [
     icon: <LayoutDashboard className="w-5 h-5" />,
     items: [
       { name: 'Dashboard', path: '/', icon: <LayoutDashboard className="w-4 h-4" /> },
+      { name: 'I Miei Progetti', path: '/my-projects', icon: <FolderOpen className="w-4 h-4" /> },
     ],
   },
   {
