@@ -1,7 +1,12 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import ComingSoon from './pages/ComingSoon'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+
+// Auth Pages
+import Login from './pages/auth/Login'
+import Register from './pages/auth/Register'
 
 // AI Management
 import AiConsultations from './pages/ai/Consultations'
@@ -46,10 +51,65 @@ import SystemDomains from './pages/system/SystemDomains'
 import SystemSecurity from './pages/system/SystemSecurity'
 import SystemNotifications from './pages/system/SystemNotifications'
 
-function App() {
+// Protected Route Component
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
+}
+
+// Public Route (redirects to dashboard if already logged in)
+function PublicRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+      </div>
+    );
+  }
+  
+  if (isAuthenticated) {
+    return <Navigate to="/my-projects" replace />;
+  }
+  
+  return <>{children}</>;
+}
+
+function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Layout />}>
+      {/* Public Auth Routes */}
+      <Route path="/login" element={
+        <PublicRoute>
+          <Login />
+        </PublicRoute>
+      } />
+      <Route path="/register" element={
+        <PublicRoute>
+          <Register />
+        </PublicRoute>
+      } />
+      
+      {/* Protected Routes */}
+      <Route path="/" element={
+        <ProtectedRoute>
+          <Layout />
+        </ProtectedRoute>
+      }>
         {/* Overview */}
         <Route index element={<Dashboard />} />
         
@@ -106,7 +166,15 @@ function App() {
         <Route path="*" element={<ComingSoon title="Coming Soon" />} />
       </Route>
     </Routes>
-  )
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
+  );
 }
 
 export default App

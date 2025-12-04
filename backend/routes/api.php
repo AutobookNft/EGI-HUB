@@ -18,6 +18,7 @@ declare(strict_types=1);
  */
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AggregationController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ProjectProxyController;
@@ -47,6 +48,30 @@ use App\Http\Controllers\Api\Superadmin\PadminViolationsController;
 use App\Http\Controllers\Api\Superadmin\PadminSymbolsController;
 use App\Http\Controllers\Api\Superadmin\PadminSearchController;
 use App\Http\Controllers\Api\Superadmin\PadminStatisticsController;
+
+/*
+|--------------------------------------------------------------------------
+| Authentication Routes (Public)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('auth')->name('auth.')->group(function () {
+    Route::post('login', [AuthController::class, 'login'])->name('login');
+    Route::post('register', [AuthController::class, 'register'])->name('register');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Authenticated Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth:sanctum')->group(function () {
+    // Auth user routes
+    Route::prefix('auth')->name('auth.')->group(function () {
+        Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+        Route::get('me', [AuthController::class, 'me'])->name('me');
+        Route::put('profile', [AuthController::class, 'updateProfile'])->name('profile');
+    });
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -220,7 +245,9 @@ Route::prefix('projects')->name('projects.')->group(function () {
 | My Projects API (User's accessible projects)
 |--------------------------------------------------------------------------
 */
-Route::get('my-projects', [ProjectAdminController::class, 'myProjects'])->name('my-projects');
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('my-projects', [ProjectAdminController::class, 'myProjects'])->name('my-projects');
+});
 
 /*
 |--------------------------------------------------------------------------
