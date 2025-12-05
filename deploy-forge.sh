@@ -5,12 +5,13 @@
 # ==============================================================================
 # 
 # ISTRUZIONI PER FORGE:
-# In Forge -> Site -> Deploy Script, incolla TUTTO questo script:
+# In Forge -> Site -> Deploy Script, usa:
 #
-# cd /home/forge/egi-hub.13.48.57.194.sslip.io
+# cd /home/forge/egi-hub.13.48.57.194.sslip.io/current
 # git pull origin $FORGE_SITE_BRANCH
 # bash deploy-forge.sh
 # 
+# NOTA: Con zero-downtime, .git è in /current, non nella root!
 # ==============================================================================
 
 set -e
