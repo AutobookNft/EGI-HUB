@@ -16,20 +16,13 @@
 
 set -e
 
-# Determina il percorso corretto
-# Se eseguito da Forge, siamo già nella root del sito
-if [ -n "$FORGE_SITE_PATH" ]; then
-    SITE_ROOT="$FORGE_SITE_PATH"
-else
-    SITE_ROOT="/home/forge/egi-hub.13.48.57.194.sslip.io"
-fi
+# Path ASSOLUTO della root del sito (NON usare $FORGE_SITE_PATH che può contenere /current)
+SITE_ROOT="/home/forge/egi-hub.13.48.57.194.sslip.io"
 
-# Per zero-downtime, current punta alla release attiva
-# Ma durante il deploy, lavoriamo sulla nuova release
-if [ -d "$SITE_ROOT/current/backend" ]; then
-    RELEASE_PATH="$SITE_ROOT/current/backend"
+# Risolvi il path reale di current (segue il symlink alla release effettiva)
+if [ -L "$SITE_ROOT/current" ]; then
+    RELEASE_PATH="$(readlink -f $SITE_ROOT/current)/backend"
 elif [ -d "$SITE_ROOT/backend" ]; then
-    # Fallback: struttura senza zero-downtime
     RELEASE_PATH="$SITE_ROOT/backend"
 else
     echo "❌ Errore: non trovo la directory backend"
@@ -39,6 +32,8 @@ fi
 echo "🚀 Deploy EGI-HUB Backend..."
 echo "   Site root: $SITE_ROOT"
 echo "   Release path: $RELEASE_PATH"
+echo "   Storage target: $SITE_ROOT/storage"
+echo "   Bootstrap-cache target: $SITE_ROOT/bootstrap-cache"
 
 # ------------------------------------------------------------------------------
 # 1. Crea directory persistenti (solo la prima volta)
