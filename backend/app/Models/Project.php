@@ -113,6 +113,22 @@ class Project extends Model
     // =========================================================================
 
     /**
+     * I tenant (clienti finali) di questo progetto
+     */
+    public function tenants(): HasMany
+    {
+        return $this->hasMany(Tenant::class);
+    }
+
+    /**
+     * Tenant attivi di questo progetto
+     */
+    public function activeTenants(): HasMany
+    {
+        return $this->tenants()->active();
+    }
+
+    /**
      * Get activities for this project
      */
     public function activities(): HasMany

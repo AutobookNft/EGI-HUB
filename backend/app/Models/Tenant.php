@@ -4,180 +4,115 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Tenant Model
  * 
- * Rappresenta un tenant (applicazione) gestito da EGI-HUB.
- * Ogni tenant è un'applicazione separata con la propria API.
+ * Rappresenta un tenant (cliente finale) di un progetto SaaS.
  * 
- * @property int $id
- * @property string $name
- * @property string $slug
- * @property string $url
- * @property string|null $api_key
- * @property string|null $api_secret
- * @property string $status
- * @property array|null $metadata
- * @property \Carbon\Carbon|null $last_health_check
- * @property bool $is_healthy
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
- * @property \Carbon\Carbon|null $deleted_at
+ * Esempi:
+ * - NATAN_LOC (project) -> Comune di Firenze, Comune di Prato (tenants)
+ * - FlorenceArtEGI (project) -> Galleria, Artista (tenants)
  */
 class Tenant extends Model
 {
     use HasFactory, SoftDeletes;
 
-    /**
-     * Status constants
-     */
     const STATUS_ACTIVE = 'active';
     const STATUS_INACTIVE = 'inactive';
-    const STATUS_MAINTENANCE = 'maintenance';
-    const STATUS_ERROR = 'error';
+    const STATUS_SUSPENDED = 'suspended';
+    const STATUS_TRIAL = 'trial';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
+        'project_id',
         'name',
         'slug',
+        'description',
         'url',
-        'production_url',
-        'staging_url',
-        'api_key',
-        'api_secret',
-        'status',
+        'subdomain',
+        'settings',
         'metadata',
-        'local_start_script',
-        'local_stop_script',
-        'supervisor_program',
-        'last_health_check',
+        'contact_name',
+        'contact_email',
+        'contact_phone',
+        'status',
+        'plan',
+        'trial_ends_at',
+        'subscription_ends_at',
         'is_healthy',
+        'last_health_check',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
-    protected $hidden = [
-        'api_key',
-        'api_secret',
-    ];
-
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
+        'settings' => 'array',
         'metadata' => 'array',
+        'trial_ends_at' => 'datetime',
+        'subscription_ends_at' => 'datetime',
         'last_health_check' => 'datetime',
         'is_healthy' => 'boolean',
     ];
 
-    /**
-     * The model's default values for attributes.
-     *
-     * @var array
-     */
     protected $attributes = [
-        'status' => self::STATUS_ACTIVE,
+        'status' => 'active',
         'is_healthy' => true,
     ];
 
-    /**
-     * Scope: only active tenants
-     */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('status', self::STATUS_ACTIVE);
     }
 
-    /**
-     * Scope: only healthy tenants
-     */
+    public function scopeTrial($query)
+    {
+        return $query->where('status', self::STATUS_TRIAL);
+    }
+
     public function scopeHealthy($query)
     {
         return $query->where('is_healthy', true);
     }
 
-    /**
-     * Check if tenant is active
-     */
+    public function scopeForProject($query, int $projectId)
+    {
+        return $query->where('project_id', $projectId);
+    }
+
     public function isActive(): bool
     {
         return $this->status === self::STATUS_ACTIVE;
     }
 
-    /**
-     * Check if tenant is in maintenance mode
-     */
-    public function isInMaintenance(): bool
+    public function isInTrial(): bool
     {
-        return $this->status === self::STATUS_MAINTENANCE;
+        return $this->status === self::STATUS_TRIAL;
     }
 
-    /**
-     * Get the full API URL for a given endpoint
-     */
-    public function getApiUrl(string $endpoint = ''): string
-    {
-        $baseUrl = rtrim($this->url, '/');
-        $endpoint = ltrim($endpoint, '/');
-        
-        return $endpoint ? "{$baseUrl}/{$endpoint}" : $baseUrl;
-    }
-
-    /**
-     * Get authentication headers for API requests
-     */
-    public function getAuthHeaders(): array
-    {
-        $headers = [
-            'Accept' => 'application/json',
-            'Content-Type' => 'application/json',
-        ];
-
-        if ($this->api_key) {
-            $headers['X-API-Key'] = $this->api_key;
-        }
-
-        if ($this->api_secret) {
-            $headers['X-API-Secret'] = $this->api_secret;
-        }
-
-        return $headers;
-    }
-
-    /**
-     * Update health status
-     */
-    public function updateHealthStatus(bool $isHealthy): void
-    {
-        $this->update([
-            'is_healthy' => $isHealthy,
-            'last_health_check' => now(),
-            'status' => $isHealthy ? self::STATUS_ACTIVE : self::STATUS_ERROR,
-        ]);
-    }
-
-    /**
-     * Get status badge color for UI
-     */
     public function getStatusColor(): string
     {
         return match($this->status) {
             self::STATUS_ACTIVE => 'success',
             self::STATUS_INACTIVE => 'warning',
-            self::STATUS_MAINTENANCE => 'info',
-            self::STATUS_ERROR => 'error',
+            self::STATUS_SUSPENDED => 'error',
+            self::STATUS_TRIAL => 'info',
             default => 'neutral',
+        };
+    }
+
+    public function getStatusLabel(): string
+    {
+        return match($this->status) {
+            self::STATUS_ACTIVE => 'Attivo',
+            self::STATUS_INACTIVE => 'Inattivo',
+            self::STATUS_SUSPENDED => 'Sospeso',
+            self::STATUS_TRIAL => 'Trial',
+            default => 'Sconosciuto',
         };
     }
 }
