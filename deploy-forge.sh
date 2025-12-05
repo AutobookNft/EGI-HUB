@@ -1,24 +1,43 @@
 #!/bin/bash
 
 # ==============================================================================
-# EGI-HUB Deploy Script per Laravel Forge
+# EGI-HUB Deploy Script per Laravel Forge (Zero-Downtime)
 # ==============================================================================
 # 
-# Questo script deve essere configurato nello script di deploy di Forge.
-# Gestisce automaticamente i symlink persistenti per .env, storage e bootstrap/cache
+# ISTRUZIONI PER FORGE:
+# In Forge -> Site -> Deploy Script, incolla TUTTO questo script:
 #
-# ISTRUZIONI:
-# 1. In Forge, vai su Site -> Deploy Script
-# 2. Sostituisci lo script di default con questo
+# cd /home/forge/egi-hub.13.48.57.194.sslip.io
+# git pull origin $FORGE_SITE_BRANCH
+# bash deploy-forge.sh
 # 
 # ==============================================================================
 
 set -e
 
-SITE_ROOT="/home/forge/egi-hub.13.48.57.194.sslip.io"
-RELEASE_PATH="$SITE_ROOT/current/backend"
+# Determina il percorso corretto
+# Se eseguito da Forge, siamo già nella root del sito
+if [ -n "$FORGE_SITE_PATH" ]; then
+    SITE_ROOT="$FORGE_SITE_PATH"
+else
+    SITE_ROOT="/home/forge/egi-hub.13.48.57.194.sslip.io"
+fi
+
+# Per zero-downtime, current punta alla release attiva
+# Ma durante il deploy, lavoriamo sulla nuova release
+if [ -d "$SITE_ROOT/current/backend" ]; then
+    RELEASE_PATH="$SITE_ROOT/current/backend"
+elif [ -d "$SITE_ROOT/backend" ]; then
+    # Fallback: struttura senza zero-downtime
+    RELEASE_PATH="$SITE_ROOT/backend"
+else
+    echo "❌ Errore: non trovo la directory backend"
+    exit 1
+fi
 
 echo "🚀 Deploy EGI-HUB Backend..."
+echo "   Site root: $SITE_ROOT"
+echo "   Release path: $RELEASE_PATH"
 
 # ------------------------------------------------------------------------------
 # 1. Crea directory persistenti (solo la prima volta)
