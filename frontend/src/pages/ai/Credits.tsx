@@ -1,33 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
-import { CreditCard, Users, TrendingUp, Loader2, AlertCircle, Plus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import api from '../../services/api';
-
-interface CreditStats {
-  total_credits_issued: number;
-  total_credits_used: number;
-  total_credits_available: number;
-  users_with_credits: number;
-}
-
-interface CreditTransaction {
-  id: number;
-  user_id: number;
-  user_name: string;
-  amount: number;
-  type: 'assigned' | 'used' | 'expired';
-  reason: string;
-  created_at: string;
-}
-
-interface CreditsResponse {
-  stats: CreditStats;
-  transactions: CreditTransaction[];
-}
+import { getAiCredits, type CreditsResponse } from '../../services/aiApi';
 
 export default function Credits() {
   const { data, isLoading, error } = useQuery<CreditsResponse>({
     queryKey: ['ai-credits'],
-    queryFn: () => api.get('/superadmin/ai/credits').then(res => res.data),
+    queryFn: () => getAiCredits(),
   });
 
   if (isLoading) {
@@ -116,13 +92,12 @@ export default function Credits() {
                       <td>{tx.id}</td>
                       <td>{tx.user_name}</td>
                       <td>
-                        <span className={`badge ${
-                          tx.type === 'assigned' ? 'badge-success' :
-                          tx.type === 'used' ? 'badge-warning' :
-                          'badge-error'
-                        }`}>
+                        <span className={`badge ${tx.type === 'assigned' ? 'badge-success' :
+                            tx.type === 'used' ? 'badge-warning' :
+                              'badge-error'
+                          }`}>
                           {tx.type === 'assigned' ? <ArrowUpRight className="w-3 h-3 mr-1" /> :
-                           tx.type === 'used' ? <ArrowDownRight className="w-3 h-3 mr-1" /> : null}
+                            tx.type === 'used' ? <ArrowDownRight className="w-3 h-3 mr-1" /> : null}
                           {tx.type}
                         </span>
                       </td>

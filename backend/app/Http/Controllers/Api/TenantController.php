@@ -17,16 +17,20 @@ use Illuminate\Validation\Rule;
  */
 class TenantController extends Controller
 {
+    protected string $modelClass;
+
     public function __construct(
         protected TenantService $tenantService
-    ) {}
+    ) {
+        $this->modelClass = config('egi-hub.tenants.model', \App\Models\Tenant::class);
+    }
 
     /**
      * Lista tutti i tenant
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Tenant::query();
+        $query = $this->modelClass::query();
 
         // Filtri opzionali
         if ($request->has('status')) {
@@ -91,7 +95,7 @@ class TenantController extends Controller
             'metadata' => 'nullable|array',
         ]);
 
-        $tenant = Tenant::create($validated);
+        $tenant = $this->modelClass::create($validated);
 
         // Health check iniziale
         $this->tenantService->checkHealth($tenant);
@@ -176,13 +180,13 @@ class TenantController extends Controller
     public function stats(): JsonResponse
     {
         $stats = [
-            'total' => Tenant::count(),
-            'active' => Tenant::where('status', 'active')->count(),
-            'inactive' => Tenant::where('status', 'inactive')->count(),
-            'maintenance' => Tenant::where('status', 'maintenance')->count(),
-            'error' => Tenant::where('status', 'error')->count(),
-            'healthy' => Tenant::where('is_healthy', true)->count(),
-            'unhealthy' => Tenant::where('is_healthy', false)->count(),
+            'total' => $this->modelClass::count(),
+            'active' => $this->modelClass::where('status', 'active')->count(),
+            'inactive' => $this->modelClass::where('status', 'inactive')->count(),
+            'maintenance' => $this->modelClass::where('status', 'maintenance')->count(),
+            'error' => $this->modelClass::where('status', 'error')->count(),
+            'healthy' => $this->modelClass::where('is_healthy', true)->count(),
+            'unhealthy' => $this->modelClass::where('is_healthy', false)->count(),
         ];
 
         return response()->json([

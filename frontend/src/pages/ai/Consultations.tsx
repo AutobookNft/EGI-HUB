@@ -1,33 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
-import { MessageSquare, Eye, User, Calendar, Loader2, AlertCircle } from 'lucide-react';
-import api from '../../services/api';
-
-interface Consultation {
-  id: number;
-  user_id: number;
-  user_name: string;
-  egi_id: number;
-  egi_name: string;
-  prompt: string;
-  response: string;
-  tokens_used: number;
-  model: string;
-  created_at: string;
-}
-
-interface ConsultationsResponse {
-  data: Consultation[];
-  meta: {
-    total: number;
-    today: number;
-    week: number;
-  };
-}
+import { getAiConsultations, type AiStats } from '../../services/aiApi';
 
 export default function Consultations() {
-  const { data, isLoading, error } = useQuery<ConsultationsResponse>({
+  const { data, isLoading, error } = useQuery<AiStats>({
     queryKey: ['ai-consultations'],
-    queryFn: () => api.get('/superadmin/ai/consultations').then(res => res.data),
+    queryFn: () => getAiConsultations(),
   });
 
   if (isLoading) {

@@ -28,9 +28,9 @@ return new class extends Migration
                   ->constrained('projects')
                   ->onDelete('cascade');
             
-            $table->foreignId('user_id')
-                  ->constrained('users')
-                  ->onDelete('cascade');
+            $table->unsignedBigInteger('user_id');
+            $table->index('user_id');
+            // No foreign key constraint because users table is in Postgres
             
             // Ruolo dell'utente nel progetto
             // owner: proprietario, può tutto incluso assegnare admin
@@ -43,10 +43,9 @@ return new class extends Migration
             $table->json('permissions')->nullable();
             
             // Data di assegnazione e chi ha assegnato
-            $table->foreignId('assigned_by')
-                  ->nullable()
-                  ->constrained('users')
-                  ->onDelete('set null');
+            $table->unsignedBigInteger('assigned_by')->nullable();
+            $table->index('assigned_by');
+            // No foreign key constraint because users table is in Postgres
             
             $table->timestamp('assigned_at')->useCurrent();
             

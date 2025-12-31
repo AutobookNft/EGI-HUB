@@ -33,7 +33,14 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      window.location.href = '/login'
+      // Evita loop infiniti: pulisci sempre lo storage su 401
+      localStorage.removeItem('egi_hub_token');
+      localStorage.removeItem('egi_hub_user');
+
+      // Reindirizza solo se non siamo già sulla pagina di login
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error)
   }
