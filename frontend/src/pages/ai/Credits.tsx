@@ -1,4 +1,6 @@
-import { getAiCredits, type CreditsResponse } from '../../services/aiApi';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2, AlertCircle, Plus, CreditCard, TrendingUp, Users, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { getAiCredits, type CreditsResponse, type CreditTransaction } from '../../services/aiApi';
 
 export default function Credits() {
   const { data, isLoading, error } = useQuery<CreditsResponse>({
@@ -87,14 +89,14 @@ export default function Credits() {
               </thead>
               <tbody>
                 {data?.transactions?.length ? (
-                  data.transactions.map((tx) => (
+                  data.transactions.map((tx: CreditTransaction) => (
                     <tr key={tx.id}>
                       <td>{tx.id}</td>
                       <td>{tx.user_name}</td>
                       <td>
                         <span className={`badge ${tx.type === 'assigned' ? 'badge-success' :
-                            tx.type === 'used' ? 'badge-warning' :
-                              'badge-error'
+                          tx.type === 'used' ? 'badge-warning' :
+                            'badge-error'
                           }`}>
                           {tx.type === 'assigned' ? <ArrowUpRight className="w-3 h-3 mr-1" /> :
                             tx.type === 'used' ? <ArrowDownRight className="w-3 h-3 mr-1" /> : null}

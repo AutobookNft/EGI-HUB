@@ -1,4 +1,6 @@
-import { getAiConsultations, type AiStats } from '../../services/aiApi';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2, AlertCircle, MessageSquare, Calendar, User, Eye } from 'lucide-react';
+import { getAiConsultations, type AiStats, type Consultation } from '../../services/aiApi';
 
 export default function Consultations() {
   const { data, isLoading, error } = useQuery<AiStats>({
@@ -77,7 +79,7 @@ export default function Consultations() {
               </thead>
               <tbody>
                 {data?.data?.length ? (
-                  data.data.map((consultation) => (
+                  data.data.map((consultation: Consultation) => (
                     <tr key={consultation.id}>
                       <td>{consultation.id}</td>
                       <td>
