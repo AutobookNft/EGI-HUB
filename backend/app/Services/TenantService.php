@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Ultra\UltraLogManager\UltraLogManager;
+use Ultra\ErrorManager\Interfaces\ErrorManagerInterface;
 use App\Models\Tenant;
 use App\Models\TenantActivity;
 use Illuminate\Support\Facades\Http;
@@ -16,11 +17,14 @@ use Illuminate\Support\Facades\Http;
 class TenantService
 {
     protected UltraLogManager $logger;
+    protected ErrorManagerInterface $errorManager;
 
     public function __construct(
-        UltraLogManager $logger
+        UltraLogManager $logger,
+        ErrorManagerInterface $errorManager
     ) {
         $this->logger = $logger;
+        $this->errorManager = $errorManager;
     }
     /**
      * Timeout per le richieste HTTP (in secondi)
@@ -152,11 +156,11 @@ class TenantService
             $endTime = microtime(true);
             $responseTime = round(($endTime - $startTime) * 1000, 2);
 
-            // ULM: Log service failure
-            $this->logger->error("Health check failed for tenant", [
+            // ULM: Trace warning (downgraded from error) - UEM will handle the actual Error event
+            $this->logger->warning("Health check failed for tenant", [
                 'tenant' => $tenant->slug,
                 'error' => $e->getMessage(),
-                'log_category' => 'TENANT_HEALTH_CHECK_ERROR'
+                'log_category' => 'TENANT_HEALTH_CHECK_WARNING'
             ]);
 
             $tenant->updateHealthStatus(false);
@@ -187,14 +191,13 @@ class TenantService
                     'health' => $this->checkHealth($tenant),
                 ];
             } catch (\Exception $e) {
-                 // ULM: Log the failure to check this specific tenant
-                 $this->logger->warning("Failed to check health in list for tenant: {$tenant->slug}", [
-                     'error' => $e->getMessage(),
+                 // UEM: Handle individual tenant failures in list
+                 // We don't throw here to ensure the loop completes for other tenants
+                 $this->errorManager->handle('TENANT_HEALTH_CHECK_FAILED', [
+                     'tenant' => $tenant->slug,
                      'log_category' => 'TENANT_LIST_CHECK_FAILURE'
-                 ]);
+                 ], $e);
                  
-                 // Mark as failed in result set (Controller will see this)
-                 // Or Controller calls checkHealthAll and expects data.
                  $results[$tenant->slug] = [
                      'healthy' => false, 
                      'error' => $e->getMessage()
@@ -229,6 +232,13 @@ class TenantService
                     'data' => $result['data'],
                 ];
             } catch (\Exception $e) {
+                // UEM: Handle stats collection failure for this tenant
+                $this->errorManager->handle('TENANT_SYNC_FAILED', [
+                    'tenant' => $tenant->slug,
+                    'action' => 'get_aggregated_stats',
+                    'log_category' => 'TENANT_STATS_ERROR'
+                ], $e);
+
                 $stats[$tenant->slug] = [
                     'success' => false,
                     'error' => $e->getMessage(),
@@ -280,11 +290,12 @@ class TenantService
             return $result['data'];
 
         } catch (\Exception $e) {
-            $this->logger->error("Sync failed from tenant", [
+            // ULM: Trace warning only
+            $this->logger->warning("Sync failed from tenant", [
                 'tenant' => $tenant->slug,
                 'resource' => $resource,
                 'error' => $e->getMessage(),
-                'log_category' => 'TENANT_SYNC_ERROR'
+                'log_category' => 'TENANT_SYNC_WARNING'
             ]);
 
             // Re-throw for Controller UEM
