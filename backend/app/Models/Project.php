@@ -75,6 +75,7 @@ class Project extends Model
         'supervisor_program',
         'last_health_check',
         'is_healthy',
+        'type',
     ];
 
     /**

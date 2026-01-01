@@ -27,7 +27,8 @@ class StagingHubSeeder extends Seeder
                 'metadata' => [
                     'theme' => 'light',
                     'features' => ['ai_chat', 'blockchain_monitor']
-                ]
+                ],
+                'type' => 'hub_core',
             ]
         );
 
