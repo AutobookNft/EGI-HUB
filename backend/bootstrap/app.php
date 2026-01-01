@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Throwable;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -19,5 +20,17 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->reportable(function (Throwable $e) {
+            try {
+                // Tenta di risolvere UEM dal container e tracciare l'errore
+                $errorManager = app(\Ultra\ErrorManager\Interfaces\ErrorManagerInterface::class);
+                $errorManager->handle('GENERIC_ERROR', [
+                    'log_category' => 'GLOBAL_EXCEPTION_HANDLER',
+                    'exception_class' => get_class($e),
+                ], $e);
+            } catch (\Throwable $loggingException) {
+                // Fallback estremo se UEM fallisce (es. DB down)
+                // Laravel userà il logger di default configurato in logging.php
+            }
+        });
     })->create();
