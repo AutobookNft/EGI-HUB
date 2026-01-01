@@ -24,7 +24,7 @@ class StagingHubSeeder extends Seeder
                 'description' => 'Main Project for EGI Ecosystem',
                 'url' => 'https://florence.egi.creates.art',
                 'status' => 'active',
-                'settings' => [
+                'metadata' => [
                     'theme' => 'light',
                     'features' => ['ai_chat', 'blockchain_monitor']
                 ]
