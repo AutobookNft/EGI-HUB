@@ -246,6 +246,33 @@ Route::prefix('projects')->name('projects.')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
+    Route::prefix('auth')->name('auth.')->group(function () {
+        Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+        Route::get('me', [AuthController::class, 'me'])->name('me');
+        Route::put('profile', [AuthController::class, 'updateProfile'])->name('profile');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Privacy & GDPR
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('privacy')->name('privacy.')->group(function () {
+        Route::get('export', [App\Http\Controllers\Api\GdprController::class, 'export'])->name('export');
+        Route::delete('forget-me', [App\Http\Controllers\Api\GdprController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::prefix('consents')->name('consents.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Api\ConsentController::class, 'index'])->name('index');
+        Route::post('/', [App\Http\Controllers\Api\ConsentController::class, 'update'])->name('update');
+        Route::get('history', [App\Http\Controllers\Api\ConsentController::class, 'history'])->name('history');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | My Projects API (User's accessible projects)
+    |--------------------------------------------------------------------------
+    */
     Route::get('my-projects', [ProjectAdminController::class, 'myProjects'])->name('my-projects');
 });
 

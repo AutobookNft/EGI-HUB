@@ -28,3 +28,5 @@ return [
         'auth_login_error' => 'Login failed due to system error: :error',
         'auth_register_error' => 'Registration failed due to system error: :error',
         'auth_profile_error' => 'Profile update failed due to system error: :error',
+        'gdpr_delete_error' => 'Failed to delete user data (GDPR): :error',
+        'consent_history_error' => 'Failed to retrieve consent history: :error',

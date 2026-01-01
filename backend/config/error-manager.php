@@ -160,5 +160,21 @@ return [
             'http_status_code' => 500,
             'msg_to' => 'toast',
         ],
+        'GDPR_DELETE_ERROR' => [
+            'type' => 'critical',
+            'blocking' => 'blocking',
+            'dev_message_key' => 'error-manager::errors_2.dev.gdpr_delete_error',
+            'user_message_key' => 'error-manager::errors_2.user.gdpr_delete_error',
+            'http_status_code' => 500,
+            'msg_to' => 'slack',
+        ],
+        'CONSENT_HISTORY_ERROR' => [
+            'type' => 'error',
+            'blocking' => 'semi-blocking',
+            'dev_message_key' => 'error-manager::errors_2.dev.consent_history_error',
+            'user_message_key' => 'error-manager::errors_2.user.consent_history_error',
+            'http_status_code' => 500,
+            'msg_to' => 'toast',
+        ],
     ],
 ];
