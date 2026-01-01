@@ -5,7 +5,8 @@ namespace App\Services;
 use App\Models\Tenant;
 use App\Models\TenantActivity;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use App\Services\Ultra\UltraLogManager;
+
 
 /**
  * TenantService
@@ -15,6 +16,12 @@ use Illuminate\Support\Facades\Log;
  */
 class TenantService
 {
+    protected UltraLogManager $logger;
+
+    public function __construct(UltraLogManager $logger)
+    {
+        $this->logger = $logger;
+    }
     /**
      * Timeout per le richieste HTTP (in secondi)
      */
@@ -38,10 +45,11 @@ class TenantService
         $url = $tenant->getApiUrl($path);
         $allHeaders = array_merge($tenant->getAuthHeaders(), $headers);
 
-        Log::debug("Proxy request to tenant", [
+        $this->logger->debug("Proxy request to tenant", [
             'tenant' => $tenant->slug,
             'method' => $method,
             'url' => $url,
+            'log_category' => 'TENANT_PROXY_REQUEST'
         ]);
 
         $request = Http::timeout($this->timeout)
@@ -57,10 +65,11 @@ class TenantService
         };
 
         if ($response->failed()) {
-            Log::warning("Tenant request failed", [
+            $this->logger->warning("Tenant request failed", [
                 'tenant' => $tenant->slug,
                 'status' => $response->status(),
                 'body' => $response->body(),
+                'log_category' => 'TENANT_PROXY_FAILURE'
             ]);
 
             throw new \RuntimeException(
@@ -122,9 +131,10 @@ class TenantService
             $endTime = microtime(true);
             $responseTime = round(($endTime - $startTime) * 1000, 2);
 
-            Log::error("Health check failed for tenant", [
+            $this->logger->error("Health check failed for tenant", [
                 'tenant' => $tenant->slug,
                 'error' => $e->getMessage(),
+                'log_category' => 'TENANT_HEALTH_CHECK_ERROR'
             ]);
 
             $tenant->updateHealthStatus(false);
@@ -228,19 +238,21 @@ class TenantService
         try {
             $result = $this->proxyRequest($tenant, 'GET', "api/{$resource}");
             
-            Log::info("Synced data from tenant", [
+            $this->logger->info("Synced data from tenant", [
                 'tenant' => $tenant->slug,
                 'resource' => $resource,
                 'count' => is_array($result['data']) ? count($result['data']) : 1,
+                'log_category' => 'TENANT_SYNC_SUCCESS'
             ]);
 
             return $result['data'];
 
         } catch (\Exception $e) {
-            Log::error("Sync failed from tenant", [
+            $this->logger->error("Sync failed from tenant", [
                 'tenant' => $tenant->slug,
                 'resource' => $resource,
                 'error' => $e->getMessage(),
+                'log_category' => 'TENANT_SYNC_ERROR'
             ]);
 
             throw $e;
@@ -255,9 +267,10 @@ class TenantService
     {
         $environment = config('app.env');
         
-        Log::info("Starting tenant services", [
+        $this->logger->info("Starting tenant services", [
             'tenant' => $tenant->slug,
             'environment' => $environment,
+            'log_category' => 'TENANT_START_INIT'
         ]);
 
         // Produzione/Staging: usa Supervisor
@@ -277,7 +290,11 @@ class TenantService
         $script = $tenant->local_start_script;
 
         if (!$script || !file_exists($script)) {
-            Log::warning("Start script not found for tenant", ['tenant' => $tenant->slug, 'script' => $script]);
+            $this->logger->warning("Start script not found for tenant", [
+                'tenant' => $tenant->slug,
+                'script' => $script,
+                'log_category' => 'TENANT_SCRIPT_MISSING'
+            ]);
             return [
                 'success' => false,
                 'message' => "Script di avvio non trovato per {$tenant->name}. Configura local_start_script nel database.",
@@ -289,7 +306,11 @@ class TenantService
             $logFile = "/tmp/tenant_start_{$tenant->slug}.log";
             exec("bash {$script} > {$logFile} 2>&1 &", $output, $returnCode);
 
-            Log::info("Started tenant services via script", ['tenant' => $tenant->slug, 'script' => $script]);
+            $this->logger->info("Started tenant services via script", [
+                'tenant' => $tenant->slug,
+                'script' => $script,
+                'log_category' => 'TENANT_SCRIPT_STARTED'
+            ]);
             
             TenantActivity::create([
                 'tenant_id' => $tenant->id,
@@ -306,7 +327,11 @@ class TenantService
             ];
 
         } catch (\Exception $e) {
-            Log::error("Failed to start tenant via script", ['tenant' => $tenant->slug, 'error' => $e->getMessage()]);
+            $this->logger->error("Failed to start tenant via script", [
+                'tenant' => $tenant->slug,
+                'error' => $e->getMessage(),
+                'log_category' => 'TENANT_SCRIPT_ERROR'
+            ]);
             return [
                 'success' => false,
                 'message' => "Errore avvio: {$e->getMessage()}",
@@ -338,11 +363,12 @@ class TenantService
             $outputStr = implode("\n", $output);
             $success = $returnCode === 0 || str_contains($outputStr, 'ALREADY_STARTED');
 
-            Log::info("Started tenant services via Supervisor", [
+            $this->logger->info("Started tenant services via Supervisor", [
                 'tenant' => $tenant->slug, 
                 'program' => $program,
                 'output' => $outputStr,
                 'return_code' => $returnCode,
+                'log_category' => 'TENANT_SUPERVISOR_STARTED'
             ]);
             
             TenantActivity::create([
@@ -363,7 +389,11 @@ class TenantService
             ];
 
         } catch (\Exception $e) {
-            Log::error("Failed to start tenant via Supervisor", ['tenant' => $tenant->slug, 'error' => $e->getMessage()]);
+            $this->logger->error("Failed to start tenant via Supervisor", [
+                'tenant' => $tenant->slug,
+                'error' => $e->getMessage(),
+                'log_category' => 'TENANT_SUPERVISOR_ERROR'
+            ]);
             return [
                 'success' => false,
                 'message' => "Errore Supervisor: {$e->getMessage()}",
@@ -379,9 +409,10 @@ class TenantService
     {
         $environment = config('app.env');
         
-        Log::info("Stopping tenant services", [
-            'tenant' => $tenant->slug,
-            'environment' => $environment,
+        $this->logger->info("Stopping tenant services", [
+                'tenant' => $tenant->slug,
+                'environment' => $environment,
+                'log_category' => 'TENANT_STOP_INIT'
         ]);
 
         // Produzione/Staging: usa Supervisor
@@ -401,7 +432,11 @@ class TenantService
         $script = $tenant->local_stop_script;
 
         if (!$script || !file_exists($script)) {
-            Log::warning("Stop script not found for tenant", ['tenant' => $tenant->slug, 'script' => $script]);
+            $this->logger->warning("Stop script not found for tenant", [
+                'tenant' => $tenant->slug,
+                'script' => $script,
+                'log_category' => 'TENANT_STOP_SCRIPT_MISSING'
+            ]);
             return [
                 'success' => false,
                 'message' => "Script di arresto non trovato per {$tenant->name}. Configura local_stop_script nel database.",
@@ -413,7 +448,11 @@ class TenantService
             $logFile = "/tmp/tenant_stop_{$tenant->slug}.log";
             exec("bash {$script} > {$logFile} 2>&1", $output, $returnCode);
 
-            Log::info("Stopped tenant services via script", ['tenant' => $tenant->slug, 'script' => $script]);
+            $this->logger->info("Stopped tenant services via script", [
+                'tenant' => $tenant->slug,
+                'script' => $script,
+                'log_category' => 'TENANT_STOP_SCRIPT_SUCCESS'
+            ]);
             
             $tenant->updateHealthStatus(false);
             
@@ -432,7 +471,11 @@ class TenantService
             ];
 
         } catch (\Exception $e) {
-            Log::error("Failed to stop tenant via script", ['tenant' => $tenant->slug, 'error' => $e->getMessage()]);
+            $this->logger->error("Failed to stop tenant via script", [
+                'tenant' => $tenant->slug,
+                'error' => $e->getMessage(),
+                'log_category' => 'TENANT_STOP_SCRIPT_ERROR'
+            ]);
             return [
                 'success' => false,
                 'message' => "Errore arresto: {$e->getMessage()}",
@@ -464,11 +507,12 @@ class TenantService
             $outputStr = implode("\n", $output);
             $success = $returnCode === 0 || str_contains($outputStr, 'NOT_RUNNING');
 
-            Log::info("Stopped tenant services via Supervisor", [
+            $this->logger->info("Stopped tenant services via Supervisor", [
                 'tenant' => $tenant->slug, 
                 'program' => $program,
                 'output' => $outputStr,
                 'return_code' => $returnCode,
+                'log_category' => 'TENANT_STOP_SUPERVISOR_SUCCESS'
             ]);
             
             $tenant->updateHealthStatus(false);
@@ -491,7 +535,11 @@ class TenantService
             ];
 
         } catch (\Exception $e) {
-            Log::error("Failed to stop tenant via Supervisor", ['tenant' => $tenant->slug, 'error' => $e->getMessage()]);
+            $this->logger->error("Failed to stop tenant via Supervisor", [
+                'tenant' => $tenant->slug,
+                'error' => $e->getMessage(),
+                'log_category' => 'TENANT_STOP_SUPERVISOR_ERROR'
+            ]);
             return [
                 'success' => false,
                 'message' => "Errore Supervisor: {$e->getMessage()}",

@@ -18,53 +18,71 @@ use Illuminate\Validation\Rule;
  * NOTA: I "Projects" in EGI-HUB sono le applicazioni SaaS (NATAN_LOC, EGI, etc.)
  * mentre i "Tenants" sono i clienti finali di ogni progetto.
  */
+use App\Services\Ultra\UltraLogManager;
+use App\Interfaces\ErrorManagerInterface;
+
 class ProjectController extends Controller
 {
     public function __construct(
-        protected ProjectService $projectService
+        protected ProjectService $projectService,
+        protected UltraLogManager $logger,
+        protected ErrorManagerInterface $errorManager
     ) {}
 
     /**
      * Lista tutti i progetti
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): mixed
     {
-        $query = Project::query();
+        try {
+            $this->logger->info('Fetching project list', [
+                'query_params' => $request->all(),
+                'log_category' => 'PROJECT_LIST_VIEW'
+            ]);
 
-        // Filtri opzionali
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+            $query = Project::query();
+
+            // Filtri opzionali
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->has('healthy')) {
+                $query->where('is_healthy', $request->boolean('healthy'));
+            }
+
+            if ($request->has('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('slug', 'like', "%{$search}%")
+                    ->orWhere('url', 'like', "%{$search}%");
+                });
+            }
+
+            // Ordinamento
+            $sortBy = $request->get('sort_by', 'name');
+            $sortDir = $request->get('sort_dir', 'asc');
+            $query->orderBy($sortBy, $sortDir);
+
+            // Paginazione opzionale
+            if ($request->has('per_page')) {
+                $projects = $query->paginate($request->integer('per_page', 15));
+            } else {
+                $projects = $query->get();
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $projects,
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->errorManager->handle('PROJECT_LIST_ERROR', [
+                'user_id' => $request->user()?->id,
+                'filters' => $request->all()
+            ], $e);
         }
-
-        if ($request->has('healthy')) {
-            $query->where('is_healthy', $request->boolean('healthy'));
-        }
-
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('slug', 'like', "%{$search}%")
-                  ->orWhere('url', 'like', "%{$search}%");
-            });
-        }
-
-        // Ordinamento
-        $sortBy = $request->get('sort_by', 'name');
-        $sortDir = $request->get('sort_dir', 'asc');
-        $query->orderBy($sortBy, $sortDir);
-
-        // Paginazione opzionale
-        if ($request->has('per_page')) {
-            $projects = $query->paginate($request->integer('per_page', 15));
-        } else {
-            $projects = $query->get();
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => $projects,
-        ]);
     }
 
     /**
@@ -81,64 +99,94 @@ class ProjectController extends Controller
     /**
      * Crea un nuovo progetto
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request): mixed
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:projects,slug|alpha_dash',
-            'description' => 'nullable|string',
-            'url' => 'required|url',
-            'production_url' => 'nullable|url',
-            'staging_url' => 'nullable|url',
-            'api_key' => 'nullable|string|max:255',
-            'api_secret' => 'nullable|string|max:255',
-            'status' => ['nullable', Rule::in(['active', 'inactive', 'maintenance'])],
-            'metadata' => 'nullable|array',
-            'local_start_script' => 'nullable|string|max:500',
-            'local_stop_script' => 'nullable|string|max:500',
-            'supervisor_program' => 'nullable|string|max:255',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'slug' => 'required|string|max:255|unique:projects,slug|alpha_dash',
+                'description' => 'nullable|string',
+                'url' => 'required|url',
+                'production_url' => 'nullable|url',
+                'staging_url' => 'nullable|url',
+                'api_key' => 'nullable|string|max:255',
+                'api_secret' => 'nullable|string|max:255',
+                'status' => ['nullable', Rule::in(['active', 'inactive', 'maintenance'])],
+                'metadata' => 'nullable|array',
+                'local_start_script' => 'nullable|string|max:500',
+                'local_stop_script' => 'nullable|string|max:500',
+                'supervisor_program' => 'nullable|string|max:255',
+            ]);
 
-        $project = Project::create($validated);
+            $this->logger->info('Creating new project', [
+                'slug' => $validated['slug'],
+                'log_category' => 'PROJECT_CREATION_START'
+            ]);
 
-        // Health check iniziale
-        $this->projectService->checkHealth($project);
+            $project = Project::create($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Progetto creato con successo',
-            'data' => $project->fresh(),
-        ], 201);
+            // Health check iniziale
+            $this->projectService->checkHealth($project);
+
+            $this->logger->info('Project created successfully', [
+                'project_id' => $project->id,
+                'log_category' => 'PROJECT_CREATION_SUCCESS'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Progetto creato con successo',
+                'data' => $project->fresh(),
+            ], 201);
+
+        } catch (\Exception $e) {
+            return $this->errorManager->handle('PROJECT_CREATION_ERROR', [
+                'user_id' => $request->user()?->id,
+                'input_data' => $request->except(['api_secret'])
+            ], $e);
+        }
     }
 
     /**
      * Aggiorna un progetto esistente
      */
-    public function update(Request $request, Project $project): JsonResponse
+    public function update(Request $request, Project $project): mixed
     {
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'slug' => ['sometimes', 'string', 'max:255', 'alpha_dash', Rule::unique('projects')->ignore($project->id)],
-            'description' => 'nullable|string',
-            'url' => 'sometimes|url',
-            'production_url' => 'nullable|url',
-            'staging_url' => 'nullable|url',
-            'api_key' => 'nullable|string|max:255',
-            'api_secret' => 'nullable|string|max:255',
-            'status' => ['nullable', Rule::in(['active', 'inactive', 'maintenance'])],
-            'metadata' => 'nullable|array',
-            'local_start_script' => 'nullable|string|max:500',
-            'local_stop_script' => 'nullable|string|max:500',
-            'supervisor_program' => 'nullable|string|max:255',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'sometimes|string|max:255',
+                'slug' => ['sometimes', 'string', 'max:255', 'alpha_dash', Rule::unique('projects')->ignore($project->id)],
+                'description' => 'nullable|string',
+                'url' => 'sometimes|url',
+                'production_url' => 'nullable|url',
+                'staging_url' => 'nullable|url',
+                'api_key' => 'nullable|string|max:255',
+                'api_secret' => 'nullable|string|max:255',
+                'status' => ['nullable', Rule::in(['active', 'inactive', 'maintenance'])],
+                'metadata' => 'nullable|array',
+                'local_start_script' => 'nullable|string|max:500',
+                'local_stop_script' => 'nullable|string|max:500',
+                'supervisor_program' => 'nullable|string|max:255',
+            ]);
 
-        $project->update($validated);
+            $this->logger->info('Updating project', [
+                'project_id' => $project->id,
+                'log_category' => 'PROJECT_UPDATE_START'
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Progetto aggiornato con successo',
-            'data' => $project->fresh(),
-        ]);
+            $project->update($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Progetto aggiornato con successo',
+                'data' => $project->fresh(),
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorManager->handle('PROJECT_UPDATE_ERROR', [
+                'project_id' => $project->id,
+                'user_id' => $request->user()?->id
+            ], $e);
+        }
     }
 
     /**
