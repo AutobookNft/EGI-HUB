@@ -20,7 +20,9 @@ class TenantController extends Controller
     protected string $modelClass;
 
     public function __construct(
-        protected TenantService $tenantService
+        protected TenantService $tenantService,
+        protected \Ultra\UltraLogManager\UltraLogManager $logger,
+        protected \Ultra\ErrorManager\Interfaces\ErrorManagerInterface $errorManager
     ) {
         $this->modelClass = config('egi-hub.tenants.model', \App\Models\Tenant::class);
     }
@@ -30,42 +32,50 @@ class TenantController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = $this->modelClass::query();
+        try {
+            $query = $this->modelClass::query();
 
-        // Filtri opzionali
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+            // Filtri opzionali
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->has('healthy')) {
+                $query->where('is_healthy', $request->boolean('healthy'));
+            }
+
+            if ($request->has('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('slug', 'like', "%{$search}%")
+                      ->orWhere('url', 'like', "%{$search}%");
+                });
+            }
+
+            // Ordinamento
+            $sortBy = $request->get('sort_by', 'name');
+            $sortDir = $request->get('sort_dir', 'asc');
+            $query->orderBy($sortBy, $sortDir);
+
+            // Paginazione opzionale
+            if ($request->has('per_page')) {
+                $tenants = $query->paginate($request->integer('per_page', 15));
+            } else {
+                $tenants = $query->get();
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $tenants,
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorManager->handle('GENERIC_ERROR', [
+                'action' => 'tenant_list',
+                'description' => 'Failed to list tenants',
+                'log_category' => 'TENANT_LIST_ERROR'
+            ], $e);
         }
-
-        if ($request->has('healthy')) {
-            $query->where('is_healthy', $request->boolean('healthy'));
-        }
-
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('slug', 'like', "%{$search}%")
-                  ->orWhere('url', 'like', "%{$search}%");
-            });
-        }
-
-        // Ordinamento
-        $sortBy = $request->get('sort_by', 'name');
-        $sortDir = $request->get('sort_dir', 'asc');
-        $query->orderBy($sortBy, $sortDir);
-
-        // Paginazione opzionale
-        if ($request->has('per_page')) {
-            $tenants = $query->paginate($request->integer('per_page', 15));
-        } else {
-            $tenants = $query->get();
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => $tenants,
-        ]);
     }
 
     /**
@@ -150,15 +160,22 @@ class TenantController extends Controller
      */
     public function healthCheck(Tenant $tenant): JsonResponse
     {
-        $result = $this->tenantService->checkHealth($tenant);
+        try {
+            $result = $this->tenantService->checkHealth($tenant);
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'tenant' => $tenant->fresh(),
-                'health' => $result,
-            ],
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'tenant' => $tenant->fresh(),
+                    'health' => $result,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorManager->handle('TENANT_HEALTH_CHECK_FAILED', [
+                'tenant' => $tenant->slug,
+                'log_category' => 'TENANT_CHECK_ERROR'
+            ], $e);
+        }
     }
 
     /**
@@ -166,12 +183,19 @@ class TenantController extends Controller
      */
     public function healthCheckAll(): JsonResponse
     {
-        $results = $this->tenantService->checkAllHealth();
+        try {
+            $results = $this->tenantService->checkAllHealth();
 
-        return response()->json([
-            'success' => true,
-            'data' => $results,
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $results,
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorManager->handle('TENANT_HEALTH_CHECK_FAILED', [
+                'action' => 'all_tenants_check',
+                'log_category' => 'TENANT_ALL_CHECK_ERROR'
+            ], $e);
+        }
     }
 
     /**

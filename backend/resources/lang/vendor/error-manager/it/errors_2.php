@@ -18,3 +18,5 @@ return [
         'project_update_error' => 'Impossibile aggiornare il progetto.',
     ]
 ];
+        'tenant_health_check_failed' => 'Health check failed for tenant :tenant. Error: :error',
+        'tenant_sync_failed' => 'Sync failed for tenant :tenant. Error: :error',

@@ -80,5 +80,21 @@ return [
             'http_status_code' => 500,
             'msg_to' => 'toast',
         ],
+        'TENANT_HEALTH_CHECK_FAILED' => [
+            'type' => 'warning',
+            'blocking' => 'not',
+            'dev_message_key' => 'error-manager::errors_2.dev.tenant_health_check_failed',
+            'user_message_key' => 'error-manager::errors_2.user.tenant_health_check_failed',
+            'http_status_code' => 503,
+            'msg_to' => 'slack',
+        ],
+        'TENANT_SYNC_FAILED' => [
+            'type' => 'error',
+            'blocking' => 'semi-blocking',
+            'dev_message_key' => 'error-manager::errors_2.dev.tenant_sync_failed',
+            'user_message_key' => 'error-manager::errors_2.user.tenant_sync_failed',
+            'http_status_code' => 502,
+            'msg_to' => 'toast',
+        ],
     ],
 ];
