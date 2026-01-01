@@ -5,7 +5,8 @@ namespace App\Services;
 use App\Models\Project;
 use App\Models\ProjectActivity;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use Ultra\UltraLogManager\UltraLogManager;
+use Ultra\ErrorManager\Interfaces\ErrorManagerInterface;
 
 /**
  * ProjectService
@@ -18,6 +19,10 @@ use Illuminate\Support\Facades\Log;
  */
 class ProjectService
 {
+    public function __construct(
+        protected UltraLogManager $logger,
+        protected ErrorManagerInterface $errorManager
+    ) {}
     /**
      * Timeout per le richieste HTTP (in secondi)
      */
@@ -41,10 +46,11 @@ class ProjectService
         $url = $project->getApiUrl($path);
         $allHeaders = array_merge($project->getAuthHeaders(), $headers);
 
-        Log::debug("Proxy request to project", [
+        $this->logger->debug("Proxy request to project", [
             'project' => $project->slug,
             'method' => $method,
             'url' => $url,
+            'log_category' => 'PROJECT_PROXY_DEBUG'
         ]);
 
         $request = Http::timeout($this->timeout)
@@ -60,10 +66,11 @@ class ProjectService
         };
 
         if ($response->failed()) {
-            Log::warning("Project request failed", [
+            $this->logger->warning("Project request failed", [
                 'project' => $project->slug,
                 'status' => $response->status(),
                 'body' => $response->body(),
+                'log_category' => 'PROJECT_PROXY_WARNING'
             ]);
 
             throw new \RuntimeException(
@@ -123,9 +130,10 @@ class ProjectService
             $endTime = microtime(true);
             $responseTime = round(($endTime - $startTime) * 1000, 2);
 
-            Log::error("Health check failed for project", [
+            $this->logger->warning("Health check failed for project", [
                 'project' => $project->slug,
                 'error' => $e->getMessage(),
+                'log_category' => 'PROJECT_HEALTH_CHECK_WARNING'
             ]);
 
             $project->updateHealthStatus(false);
@@ -133,12 +141,8 @@ class ProjectService
             // Log error activity
             ProjectActivity::logError($project, 'Health Check Failed', $e->getMessage());
 
-            return [
-                'healthy' => false,
-                'error' => $e->getMessage(),
-                'response_time_ms' => $responseTime,
-                'checked_at' => now()->toIso8601String(),
-            ];
+            // Throw exception for Controller UEM
+            throw $e;
         }
     }
 
@@ -151,14 +155,27 @@ class ProjectService
         $results = [];
 
         foreach ($projects as $project) {
-            $results[$project->slug] = [
-                'project' => [
-                    'id' => $project->id,
-                    'name' => $project->name,
-                    'url' => $project->url,
-                ],
-                'health' => $this->checkHealth($project),
-            ];
+            try {
+                $results[$project->slug] = [
+                    'project' => [
+                        'id' => $project->id,
+                        'name' => $project->name,
+                        'url' => $project->url,
+                    ],
+                    'health' => $this->checkHealth($project),
+                ];
+            } catch (\Exception $e) {
+                 // UEM Handle for bulk ops
+                 $this->errorManager->handle('PROJECT_LIST_ERROR', [
+                     'project' => $project->slug,
+                     'log_category' => 'PROJECT_LIST_CHECK_FAILURE'
+                 ], $e);
+
+                 $results[$project->slug] = [
+                     'healthy' => false, 
+                     'error' => $e->getMessage()
+                 ];
+            }
         }
 
         return [
@@ -209,9 +226,10 @@ class ProjectService
         // Verifica la connettività
         $health = $this->checkHealth($project);
 
-        Log::info("New project registered", [
+        $this->logger->info("New project registered", [
             'project' => $project->slug,
             'healthy' => $health['healthy'],
+            'log_category' => 'PROJECT_REGISTERED'
         ]);
 
         return $project;
@@ -229,19 +247,21 @@ class ProjectService
         try {
             $result = $this->proxyRequest($project, 'GET', "api/{$resource}");
             
-            Log::info("Synced data from project", [
+            $this->logger->info("Synced data from project", [
                 'project' => $project->slug,
                 'resource' => $resource,
                 'count' => is_array($result['data']) ? count($result['data']) : 1,
+                'log_category' => 'PROJECT_SYNC_SUCCESS'
             ]);
 
             return $result['data'];
 
         } catch (\Exception $e) {
-            Log::error("Sync failed from project", [
+            $this->logger->warning("Sync failed from project", [
                 'project' => $project->slug,
                 'resource' => $resource,
                 'error' => $e->getMessage(),
+                'log_category' => 'PROJECT_SYNC_WARNING'
             ]);
 
             throw $e;
@@ -307,11 +327,13 @@ class ProjectService
             ];
 
         } catch (\Exception $e) {
-            Log::error("Failed to start project via script", ['project' => $project->slug, 'error' => $e->getMessage()]);
-            return [
-                'success' => false,
-                'message' => "Errore avvio: {$e->getMessage()}",
-            ];
+            $this->logger->warning("Failed to start project via script", [
+                'project' => $project->slug, 
+                'error' => $e->getMessage(),
+                'log_category' => 'PROJECT_START_SCRIPT_WARNING'
+            ]);
+            
+            throw $e;
         }
     }
 
@@ -364,11 +386,13 @@ class ProjectService
             ];
 
         } catch (\Exception $e) {
-            Log::error("Failed to start project via Supervisor", ['project' => $project->slug, 'error' => $e->getMessage()]);
-            return [
-                'success' => false,
-                'message' => "Errore Supervisor: {$e->getMessage()}",
-            ];
+            $this->logger->warning("Failed to start project via Supervisor", [
+                'project' => $project->slug, 
+                'error' => $e->getMessage(),
+                'log_category' => 'PROJECT_START_SUPERVISOR_WARNING'
+            ]);
+            
+            throw $e;
         }
     }
 
@@ -433,11 +457,13 @@ class ProjectService
             ];
 
         } catch (\Exception $e) {
-            Log::error("Failed to stop project via script", ['project' => $project->slug, 'error' => $e->getMessage()]);
-            return [
-                'success' => false,
-                'message' => "Errore arresto: {$e->getMessage()}",
-            ];
+            $this->logger->warning("Failed to stop project via script", [
+                'project' => $project->slug, 
+                'error' => $e->getMessage(),
+                'log_category' => 'PROJECT_STOP_SCRIPT_WARNING'
+            ]);
+            
+            throw $e;
         }
     }
 
@@ -492,11 +518,13 @@ class ProjectService
             ];
 
         } catch (\Exception $e) {
-            Log::error("Failed to stop project via Supervisor", ['project' => $project->slug, 'error' => $e->getMessage()]);
-            return [
-                'success' => false,
-                'message' => "Errore Supervisor: {$e->getMessage()}",
-            ];
+            $this->logger->warning("Failed to stop project via Supervisor", [
+                'project' => $project->slug, 
+                'error' => $e->getMessage(),
+                'log_category' => 'PROJECT_STOP_SUPERVISOR_WARNING'
+            ]);
+            
+            throw $e;
         }
     }
 }
