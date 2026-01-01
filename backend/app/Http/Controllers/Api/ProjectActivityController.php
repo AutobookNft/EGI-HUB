@@ -13,8 +13,22 @@ use Illuminate\Http\Request;
  * Gestisce il log delle attività (audit trail) per i progetti.
  * TODO: Implementare completamente quando sarà necessario il tracking delle attività.
  */
+use Ultra\UltraLogManager\UltraLogManager;
+use Ultra\ErrorManager\Interfaces\ErrorManagerInterface;
+
+/**
+ * Controller per le attività dei progetti
+ * 
+ * Gestisce il log delle attività (audit trail) per i progetti.
+ * TODO: Implementare completamente quando sarà necessario il tracking delle attività.
+ */
 class ProjectActivityController extends Controller
 {
+    public function __construct(
+        protected UltraLogManager $logger,
+        protected ErrorManagerInterface $errorManager
+    ) {}
+
     /**
      * Lista tutte le attività
      * 
@@ -22,12 +36,19 @@ class ProjectActivityController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        // TODO: Implementare il modello Activity e la logica
-        return response()->json([
-            'success' => true,
-            'data' => [],
-            'message' => 'Activity tracking non ancora implementato',
-        ]);
+        try {
+            // TODO: Implementare il modello Activity e la logica
+            return response()->json([
+                'success' => true,
+                'data' => [],
+                'message' => 'Activity tracking non ancora implementato',
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorManager->handle('PROJECT_ACTIVITY_LIST_ERROR', [
+                'action' => 'list_activities',
+                'log_category' => 'PROJECT_ACTIVITY_ERROR'
+            ], $e);
+        }
     }
 
     /**
@@ -37,15 +58,22 @@ class ProjectActivityController extends Controller
      */
     public function stats(Request $request): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'total' => 0,
-                'today' => 0,
-                'this_week' => 0,
-                'this_month' => 0,
-            ],
-        ]);
+        try {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total' => 0,
+                    'today' => 0,
+                    'this_week' => 0,
+                    'this_month' => 0,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorManager->handle('PROJECT_ACTIVITY_LIST_ERROR', [
+                'action' => 'activity_stats',
+                'log_category' => 'PROJECT_STATS_ERROR'
+            ], $e);
+        }
     }
 
     /**
@@ -55,10 +83,17 @@ class ProjectActivityController extends Controller
      */
     public function recent(Request $request): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'data' => [],
-        ]);
+        try {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorManager->handle('PROJECT_ACTIVITY_LIST_ERROR', [
+                'action' => 'recent_activities',
+                'log_category' => 'PROJECT_RECENT_ERROR'
+            ], $e);
+        }
     }
 
     /**
@@ -68,10 +103,17 @@ class ProjectActivityController extends Controller
      */
     public function timeline(Request $request): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'data' => [],
-        ]);
+        try {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorManager->handle('PROJECT_ACTIVITY_LIST_ERROR', [
+                'action' => 'timeline',
+                'log_category' => 'PROJECT_TIMELINE_ERROR'
+            ], $e);
+        }
     }
 
     /**
@@ -81,14 +123,21 @@ class ProjectActivityController extends Controller
      */
     public function forProject(Request $request, Project $project): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'data' => [],
-            'project' => [
-                'id' => $project->id,
-                'name' => $project->name,
-                'slug' => $project->slug,
-            ],
-        ]);
+        try {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+                'project' => [
+                    'id' => $project->id,
+                    'name' => $project->name,
+                    'slug' => $project->slug,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorManager->handle('PROJECT_ACTIVITY_LIST_ERROR', [
+                'project' => $project->slug,
+                'log_category' => 'PROJECT_ACTIVITY_ERROR'
+            ], $e);
+        }
     }
 }

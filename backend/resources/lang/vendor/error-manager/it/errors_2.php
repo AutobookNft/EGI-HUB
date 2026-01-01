@@ -23,3 +23,8 @@ return [
         'tenant_action_error' => 'Action :action failed for tenant :tenant. Error: :error',
         'tenant_activity_list_error' => 'Failed to retrieve tenant activities. Error: :error',
         'tenant_stats_error' => 'Failed to calculate tenant stats. Error: :error',
+        'project_proxy_error' => 'Proxy request to project failed. Error: :error',
+        'project_activity_list_error' => 'Failed to retrieve project activities. Error: :error',
+        'auth_login_error' => 'Login failed due to system error: :error',
+        'auth_register_error' => 'Registration failed due to system error: :error',
+        'auth_profile_error' => 'Profile update failed due to system error: :error',

@@ -18,6 +18,11 @@ use Illuminate\Validation\ValidationException;
  */
 class AuthController extends Controller
 {
+    public function __construct(
+        protected UltraLogManager $logger,
+        protected ErrorManagerInterface $errorManager
+    ) {}
+
     /**
      * Login utente
      * 
@@ -25,38 +30,47 @@ class AuthController extends Controller
      */
     public function login(Request $request): JsonResponse
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
-
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['Credenziali non valide.'],
+        try {
+            $request->validate([
+                'email' => 'required|email',
+                'password' => 'required|string',
             ]);
-        }
 
-        // Revoca tutti i token esistenti (single session)
-        $user->tokens()->delete();
+            $user = User::where('email', $request->email)->first();
 
-        // Crea nuovo token
-        $token = $user->createToken('auth-token')->plainTextToken;
+            if (!$user || !Hash::check($request->password, $user->password)) {
+                throw ValidationException::withMessages([
+                    'email' => ['Credenziali non valide.'],
+                ]);
+            }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Login effettuato con successo',
-            'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'is_super_admin' => $user->is_super_admin,
+            // Revoca tutti i token esistenti (single session)
+            $user->tokens()->delete();
+
+            // Crea nuovo token
+            $token = $user->createToken('auth-token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Login effettuato con successo',
+                'data' => [
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'is_super_admin' => $user->is_super_admin,
+                    ],
+                    'token' => $token,
                 ],
-                'token' => $token,
-            ],
-        ]);
+            ]);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            return $this->errorManager->handle('AUTH_LOGIN_ERROR', [
+                'email' => $request->email,
+                'log_category' => 'AUTH_LOGIN_SYSTEM_ERROR'
+            ], $e);
+        }
     }
 
     /**
@@ -66,34 +80,43 @@ class AuthController extends Controller
      */
     public function register(Request $request): JsonResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
+        try {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|string|min:8|confirmed',
+            ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'is_super_admin' => false,
-        ]);
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'is_super_admin' => false,
+            ]);
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+            $token = $user->createToken('auth-token')->plainTextToken;
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Registrazione completata',
-            'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'is_super_admin' => $user->is_super_admin,
+            return response()->json([
+                'success' => true,
+                'message' => 'Registrazione completata',
+                'data' => [
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'is_super_admin' => $user->is_super_admin,
+                    ],
+                    'token' => $token,
                 ],
-                'token' => $token,
-            ],
-        ], 201);
+            ], 201);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            return $this->errorManager->handle('AUTH_REGISTER_ERROR', [
+                'email' => $request->email,
+                'log_category' => 'AUTH_REGISTER_SYSTEM_ERROR'
+            ], $e);
+        }
     }
 
     /**
@@ -103,13 +126,23 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        // Revoca il token corrente
-        $request->user()->currentAccessToken()->delete();
+        try {
+            // Revoca il token corrente
+            $request->user()->currentAccessToken()->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Logout effettuato',
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Logout effettuato',
+            ]);
+        } catch (\Exception $e) {
+             // Non bloccante per l'utente, ma logghiamo
+             $this->logger->warning("Logout failed", [
+                 'user_id' => $request->user()?->id,
+                 'error' => $e->getMessage()
+             ]);
+             
+             return response()->json(['success' => false, 'message' => 'Error during logout'], 500);
+        }
     }
 
     /**
@@ -119,17 +152,24 @@ class AuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'is_super_admin' => $user->is_super_admin,
-            ],
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'is_super_admin' => $user->is_super_admin,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorManager->handle('GENERIC_ERROR', [
+                'action' => 'auth_me',
+                'log_category' => 'AUTH_ME_ERROR'
+            ], $e);
+        }
     }
 
     /**
@@ -139,43 +179,52 @@ class AuthController extends Controller
      */
     public function updateProfile(Request $request): JsonResponse
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:users,email,' . $user->id,
-            'current_password' => 'required_with:new_password|string',
-            'new_password' => 'sometimes|string|min:8|confirmed',
-        ]);
+            $request->validate([
+                'name' => 'sometimes|string|max:255',
+                'email' => 'sometimes|email|unique:users,email,' . $user->id,
+                'current_password' => 'required_with:new_password|string',
+                'new_password' => 'sometimes|string|min:8|confirmed',
+            ]);
 
-        if ($request->has('name')) {
-            $user->name = $request->name;
-        }
-
-        if ($request->has('email')) {
-            $user->email = $request->email;
-        }
-
-        if ($request->has('new_password')) {
-            if (!Hash::check($request->current_password, $user->password)) {
-                throw ValidationException::withMessages([
-                    'current_password' => ['Password attuale non corretta.'],
-                ]);
+            if ($request->has('name')) {
+                $user->name = $request->name;
             }
-            $user->password = Hash::make($request->new_password);
+
+            if ($request->has('email')) {
+                $user->email = $request->email;
+            }
+
+            if ($request->has('new_password')) {
+                if (!Hash::check($request->current_password, $user->password)) {
+                    throw ValidationException::withMessages([
+                        'current_password' => ['Password attuale non corretta.'],
+                    ]);
+                }
+                $user->password = Hash::make($request->new_password);
+            }
+
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profilo aggiornato',
+                'data' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'is_super_admin' => $user->is_super_admin,
+                ],
+            ]);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            return $this->errorManager->handle('AUTH_PROFILE_ERROR', [
+                'user_id' => $request->user()?->id,
+                'log_category' => 'AUTH_PROFILE_UPDATE_ERROR'
+            ], $e);
         }
-
-        $user->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Profilo aggiornato',
-            'data' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'is_super_admin' => $user->is_super_admin,
-            ],
-        ]);
     }
 }
