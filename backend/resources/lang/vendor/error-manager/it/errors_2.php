@@ -20,3 +20,6 @@ return [
 ];
         'tenant_health_check_failed' => 'Health check failed for tenant :tenant. Error: :error',
         'tenant_sync_failed' => 'Sync failed for tenant :tenant. Error: :error',
+        'tenant_action_error' => 'Action :action failed for tenant :tenant. Error: :error',
+        'tenant_activity_list_error' => 'Failed to retrieve tenant activities. Error: :error',
+        'tenant_stats_error' => 'Failed to calculate tenant stats. Error: :error',
