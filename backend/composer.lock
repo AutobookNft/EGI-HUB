@@ -732,7 +732,7 @@
             "dist": {
                 "type": "path",
                 "url": "..",
-                "reference": "9146b50d9e242e5beb3e05b85da02418ce543335"
+                "reference": "497a4fabf4a48ec7ce513002c0fbb7fb75551f44"
             },
             "require": {
                 "illuminate/database": "^10.0|^11.0|^12.0",
