@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
+use Ultra\UltraLogManager\UltraLogManager;
 use App\Models\Tenant;
 use App\Models\TenantActivity;
 use Illuminate\Support\Facades\Http;
-use App\Services\Ultra\UltraLogManager;
 
 
 /**

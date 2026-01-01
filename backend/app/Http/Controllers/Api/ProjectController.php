@@ -18,8 +18,8 @@ use Illuminate\Validation\Rule;
  * NOTA: I "Projects" in EGI-HUB sono le applicazioni SaaS (NATAN_LOC, EGI, etc.)
  * mentre i "Tenants" sono i clienti finali di ogni progetto.
  */
-use App\Services\Ultra\UltraLogManager;
-use App\Interfaces\ErrorManagerInterface;
+use Ultra\UltraLogManager\UltraLogManager;
+use Ultra\ErrorManager\Interfaces\ErrorManagerInterface;
 
 class ProjectController extends Controller
 {
