@@ -16,7 +16,7 @@ export default defineConfig({
       // Tutte le API passano dal backend EGI-HUB
       // Il backend fa da proxy/aggregatore verso i tenant
       '/api': {
-        target: 'http://localhost:8002',
+        target: 'http://localhost:8010',
         changeOrigin: true,
       },
     },

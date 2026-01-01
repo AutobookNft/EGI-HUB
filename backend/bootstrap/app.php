@@ -3,6 +3,11 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use App\Helpers\EarlyEnvironmentHelper;
+
+
+// 🔐 Carica le variabili di ambiente critiche prima del bootstrap
+EarlyEnvironmentHelper::loadCriticalEnvironmentVariables(dirname(__DIR__));
 
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -17,7 +22,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'project.access' => \App\Http\Middleware\ProjectAccess::class,
             'project.permission' => \App\Http\Middleware\ProjectPermission::class,
-        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->reportable(function (Throwable $e) {

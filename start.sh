@@ -24,10 +24,10 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM
 
-# Avvia Backend Laravel (porta 8002)
-echo -e "${BLUE}📦 Avvio Backend Laravel (porta 8002)...${NC}"
+# Avvia Backend Laravel (porta 8010)
+echo -e "${BLUE}📦 Avvio Backend Laravel (porta 8010)...${NC}"
 cd "$BASE_DIR/backend"
-php artisan serve --port=8002 2>/dev/null &
+php artisan serve --port=8010 2>/dev/null &
 BACKEND_PID=$!
 
 # Attendi che il backend sia pronto
@@ -43,7 +43,7 @@ echo ""
 echo "════════════════════════════════════════════════"
 echo -e "${GREEN}✅ EGI-HUB attivo!${NC}"
 echo ""
-echo -e "   ${BLUE}Backend:${NC}  http://localhost:8002"
+echo -e "   ${BLUE}Backend:${NC}  http://localhost:8010"
 echo -e "   ${GREEN}Frontend:${NC} http://localhost:5174"
 echo ""
 echo "   Premi Ctrl+C per arrestare"
