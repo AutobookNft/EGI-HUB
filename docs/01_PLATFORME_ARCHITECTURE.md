@@ -57,10 +57,10 @@ graph TB
 | **EGI-HUB** | Gestione piattaforma, billing, licensing, progetti, tenant | Staff EGI | MariaDB (HUB_EGI) |
 | **EGI-CORE** | Utenti centralizzati, autenticazione, SSO | Tutti i progetti | PostgreSQL (fegi_prod) |
 | **NATAN** | Aggregazioni cross-tenant per famiglia NATAN_* | Admin tenant | PostgreSQL (natan_federation) |
-| **NATAN_LOC** | RAG, chat, bacheca per PA | Utenti PA | MongoDB + PostgreSQL |
-| **NATAN_COMPANY** | RAG, chat, bacheca per aziende | Utenti aziende | MongoDB + PostgreSQL |
-| **florenceArtEgi** | Gestione opere d'arte, cultura | Utenti cultura | TBD |
-| **Tosca_bandi** | Gestione bandi regionali | Utenti bandi | TBD |
+| **NATAN_LOC** | RAG, chat, bacheca per PA | MongoDB + PostgreSQL |
+| **NATAN_COMPANY** | RAG, chat, bacheca per aziende | MongoDB + PostgreSQL |
+| **florenceArtEgi** | Gestione opere d'arte, cultura | TBD |
+| **Tosca_bandi** | Gestione bandi regionali | TBD |
 
 ---
 

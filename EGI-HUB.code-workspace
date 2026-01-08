@@ -1,0 +1,18 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../NATAN"
+		},
+		{
+			"path": "../EGI"
+		},
+		{
+			"path": "../NATAN_LOC"
+		}
+	],
+	"settings": {
+	}
+}
