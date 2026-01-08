@@ -83,19 +83,20 @@ return [
             ]) : [],
         ],
 
+        // Primary connection (AWS RDS - hub,core,public schemas)
         'pgsql' => [
             'driver' => 'pgsql',
-            'url' => env('EGI_DB_URL'),
-            'host' => env('EGI_DB_HOST', '127.0.0.1'),
-            'port' => env('EGI_DB_PORT', '5432'),
-            'database' => env('EGI_DB_DATABASE', 'laravel'),
-            'username' => env('EGI_DB_USERNAME', 'root'),
-            'password' => env('EGI_DB_PASSWORD', ''),
-            'charset' => env('EGI_DB_CHARSET', 'utf8'),
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'florenceegi'),
+            'username' => env('DB_USERNAME', 'florence_app'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-            'search_path' => 'public',
-            'sslmode' => 'prefer',
+            'search_path' => env('DB_SEARCH_PATH', 'hub,core,public'),
+            'sslmode' => 'require',
         ],
 
         'sqlsrv' => [
