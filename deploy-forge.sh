@@ -17,7 +17,7 @@
 set -e
 
 # Path ASSOLUTO della root del sito (NON usare $FORGE_SITE_PATH che può contenere /current)
-SITE_ROOT="/home/forge/egi-hub.13.48.57.194.sslip.io"
+SITE_ROOT="/home/forge/egi-hub.13.53.205.215.sslip.io"
 
 # Risolvi il path reale di current (segue il symlink alla release effettiva)
 if [ -L "$SITE_ROOT/current" ]; then
