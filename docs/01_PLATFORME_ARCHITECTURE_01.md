@@ -1,9 +1,10 @@
-# 🏗️ EGI Platform Architecture v2.0
+# 🏗️ EGI Platform Architecture v2.1
 
-> **Versione**: 2.0  
-> **Data**: 2026-01-07  
-> **Autore**: Fabio Cherici + Antigravity AI  
+> **Versione**: 2.1
+> **Data**: 2026-01-09
+> **Autore**: Fabio Cherici + Antigravity AI
 > **Stato**: Approvata
+> **Changelog**: Allineamento "Single Source of Truth", Centralizzazione Progetti
 
 ---
 
@@ -12,18 +13,18 @@
 ```mermaid
 graph TB
     subgraph "DATABASE UNIFICATO"
-        DB[("AWS RDS PostgreSQL\nflorenceegi\n\nSchema: core (~140 tabelle)\nSchema: natan (~15 tabelle)")]
+        DB[("AWS RDS PostgreSQL\nflorenceegi\n\nSchema: core (~140 tabelle - Shared Users & Roles)\nSchema: natan (~15 tabelle - Tenant Specific)")]
     end
     
     subgraph "CONTROL PLANE"
-        HUB["EGI-HUB\nAdmin Dashboard\n+ Aggregazioni P2P"]
+        HUB["EGI-HUB\nAdmin Dashboard\n+ Gestione Progetti Centralizzata\n+ Aggregazioni P2P"]
         FEGI["FlorenceEGI\n= CORE ECOSISTEMA\negligis, blockchain, COA, EPP..."]
     end
     
     subgraph "DATA PLANE - Famiglia NATAN"
-        LOC["NATAN_LOC\nPA/Comuni"]
-        COMPANY["NATAN_COMPANY\nAziende"]
-        ORG["NATAN_ORG\nOrganizzazioni"]
+        LOC["NATAN_LOC\nPA/Comuni\n(Gestisce Cultural Projects)"]
+        COMPANY["NATAN_COMPANY\nAziende\n(Gestisce Corporate Projects)"]
+        ORG["NATAN_ORG\nOrganizzazioni\n(Gestisce EPP Projects)"]
     end
     
     subgraph "DATA PLANE - Altri"
@@ -32,16 +33,21 @@ graph TB
     end
     
     DB --- FEGI
-    FEGI --> HUB
-    FEGI --> LOC
-    FEGI --> COMPANY
-    FEGI --> ORG
-    FEGI --> TOSCA
-    FEGI --> FUTURE
     
-    HUB -.->|gestisce| LOC
-    HUB -.->|gestisce| COMPANY
-    HUB -.->|gestisce| TOSCA
+    %% Flusso Progetti e Dati
+    FEGI --> HUB
+    HUB -->|Centralizza Progetti| FEGI
+    
+    %% Verticali
+    FEGI -- "core schema" --> LOC
+    FEGI -- "core schema" --> COMPANY
+    FEGI -- "core schema" --> ORG
+    FEGI --> TOSCA
+    
+    %% Gestione
+    HUB -.->|gestisce & monitora| LOC
+    HUB -.->|gestisce & monitora| COMPANY
+    HUB -.->|gestisce & monitora| TOSCA
     
     style DB fill:#4285f4,color:white
     style FEGI fill:#34a853,color:white
@@ -53,28 +59,31 @@ graph TB
 
 ---
 
-## 🎯 Cambiamenti Chiave (v1 → v2)
+## 🎯 Cambiamenti Chiave (v2.0 → v2.1)
 
-| Aspetto | v1 (Vecchia) | v2 (Nuova) |
-|---------|--------------|------------|
-| **Database** | Multi-DB (MariaDB, PostgreSQL separati) | **DB Unificato** AWS RDS PostgreSQL |
-| **FlorenceEGI** | Uno dei progetti | **= CORE ecosistema** |
-| **NATAN** (federation layer) | Progetto separato | **DEPRECATO** (assorbito in EGI-HUB) |
-| **Aggregazioni** | Via NATAN | **Dirette in EGI-HUB** (P2P) |
-| **Schema DB** | Implicito | **Esplicito** (core + natan) |
+| Aspetto | v2.0 (Precedente) | v2.1 (Attuale) |
+|---------|-------------------|----------------|
+| **Gestione Identità** | Implicita unificazione | **Single Source of Truth (SSOT)**: `RolesAndPermissionsSeeder` unico in EGI. NATAN_LOC legge da DB condiviso. |
+| **Gestione Progetti** | Decentralizzata per app | **Centralizzata in EGI-HUB**: Workflow unificato per EPP, Cultural, Corporate projects. |
+| **NATAN_LOC** | App isolata con proprio seeder ruoli (bug) | **Client del DB Unificato**: Usa `core.roles` e `core.users` gestiti dal Control Plane. |
+| **Workflow Approvazione** | Non specificato | **Flow Explicit**: Proposta -> AI Valid -> HUB Review -> NFT Minting. |
 
 ---
 
-## 🗄️ Architettura Database Unificata
+## 🗄️ Architettura Database Unificata: Single Source of Truth
+
+**Principio Fondamentale**: Esiste una sola tabella `users` e una sola tabella `roles` per tutto l'ecosistema. Nessun verticale (LOC, COMPANY) deve avere copie locali o seeder duplicati per queste entità.
 
 ### Connessione AWS RDS
+Ogni applicazione si connette allo **stesso DB**, cambiando solo il `search_path` per le tabelle specifiche.
 
 ```env
-DB_CONNECTION=pgsql
-DB_HOST=florenceegi-postgres-dev.c1i0048yu660.eu-north-1.rds.amazonaws.com
-DB_PORT=5432
-DB_DATABASE=florenceegi
-DB_USERNAME=florence_app
+# EGI-HUB (Master)
+DB_SEARCH_PATH=core,public
+
+# NATAN_LOC (Verticale PA)
+DB_SEARCH_PATH=natan,core,public
+# NOTA: 'core' è essenziale per vedere users, roles, egis condivisi
 ```
 
 ### Schema PostgreSQL
@@ -82,133 +91,99 @@ DB_USERNAME=florence_app
 ```
 Database: florenceegi
 │
-├── Schema: core (~140 tabelle)
-│   ├── 👤 Users & Auth: users, user_*, personal_access_tokens
-│   ├── 🎨 EGI: egis, egi_*, collections, collection_user
-│   ├── ⛓️ Blockchain: egi_blockchain, egi_smart_contracts
-│   ├── 📜 COA: coa, coa_snapshots, coa_files, coa_signatures, coa_annexes, coa_events
-│   ├── 🌱 EPP: epp, epp_projects, epp_transactions
-│   ├── 🎨 Traits: trait_categories, trait_types, egi_traits, egi_coa_traits
-│   ├── 🔐 RBAC: roles, permissions, model_has_*
-│   ├── 📋 GDPR: consent_*, privacy_*, gdpr_*, user_consents
-│   ├── 💰 Wallets & Payments: wallets, payment_distributions, invoices, orders
-│   ├── 🤖 AI: ai_credits_transactions, ai_feature_pricing, ai_*
-│   ├── 🔗 Aggregazioni P2P: aggregations, aggregation_members
-│   └── 📊 Audit: user_activities, error_logs
+├── Schema: core (SHARED - Read/Write da EGI, Read-Only* da Verticali)
+│   ├── � Users & Auth: users, model_has_roles, roles, permissions
+│   ├── �️ Gestione Progetti: epp_projects, egis (context-aware)
+│   ├── 🎨 EGI: collections, trait_*
+│   ├── ⛓️ Blockchain: egi_blockchain
+│   └── � GDPR: consent_*, privacy_*
 │
-├── Schema: natan (~15 tabelle)
-│   ├── 🏛️ Tenants: tenants
-│   ├── 📄 PA Acts: pa_acts
-│   ├── 💬 Chat AI: natan_chat_messages, user_conversations
-│   ├── 🧠 Memorie: natan_user_memories
-│   ├── 💬 Chat Umana: channels, channel_members, channel_messages
-│   └── 📢 Bacheca: bulletin_posts
+├── Schema: natan (Vertical Specific)
+│   ├── 🏛️ Tenants: tenants (dati specifici app)
+│   ├── 💬 Chat AI: natan_chat_messages
+│   └── 🧠 Memorie: natan_user_memories
 │
 └── Schema: public
-    └── migrations, cache, jobs
+    └── migrations
+```
+*\*Read-Only logico: I verticali scrivono su core.egis per i loro progetti, ma non ridefiniscono la struttura.*
+
+---
+
+## 🛠️ Gestione Centralizzata dei Progetti (Project Management)
+
+Tutti i progetti, indipendentemente dall'origine (PA, Azienda, Ente), risiedono nelle tabelle `core` e sono orchestrati da **EGI-HUB**.
+
+### Tipologie e Mappatura
+
+1.  **EPP Projects (Environmental)**
+    *   **Source**: NATAN_ORG / EGI Portal
+    *   **Tabella**: `core.epp_projects`
+    *   **Responsabile**: Ruolo `epp_entity`.
+    *   **Output**: Crediti di sostenibilità.
+
+2.  **Cultural Projects (PA/Institutional)**
+    *   **Source**: NATAN_LOC
+    *   **Tabella**: `core.egis` (con `context='cultural_project'`)
+    *   **Responsabile**: Ruolo `pa_entity` (Mario Rossi, et al.).
+    *   **Output**: Valorizzazione asset, Crowdfunding.
+
+3.  **Corporate Projects**
+    *   **Source**: NATAN_COMPANY
+    *   **Tabella**: `core.egis` (con `context='corporate_project'`)
+    *   **Responsabile**: Ruolo `company`.
+    *   **Output**: CSR, Prodotti Digitali.
+
+### Workflow Unificato
+
+```mermaid
+graph LR
+    subgraph "Verticale (es. NATAN_LOC)"
+        A[Start: Proposta Progetto]
+    end
+    
+    subgraph "EGI Intelligence Layer"
+        A -->|Analisi Preliminare| B(AI Validation & Scoring)
+    end
+    
+    subgraph "EGI-HUB (Control Plane)"
+        B -->|Report AI| C{Human Review}
+        C -->|Approved| D[Stato: ACTIVE]
+        C -->|Rejected| E[Stato: REJECTED]
+    end
+    
+    subgraph "Blockchain Layer"
+        D -->|Trigger| F[Minting NFT / Tokenizzazione]
+        F --> G[Marketplace Listing]
+    end
 ```
 
 ---
 
-## 🔄 Modello P2P "Grappoli"
+## � Modello P2P "Grappoli" (Federation)
 
-### Principio Fondamentale
+> **"Niente è automatico. Niente è gerarchico. Tutto è consensuale."**
 
-> **"Niente è automatico. Niente è gerarchico. Tutto è consensuale e P2P."**
-
-### Esempio NATAN_LOC (PA)
+I tenant (es. Comune di Firenze) vivono in `natan.tenants` ma collaborano attraverso aggregazioni definite in `core.aggregations`.
 
 ```
-Aggregazione "Comuni Versilia"
-├── 🏛️ Comune Viareggio ←→ Comune Camaiore
-├── 🏛️ Comune Pietrasanta ←→ Comune Massarosa
-└── Condivisione: Chat umana + RAG cross-tenant
-```
-
-### Esempio NATAN_COMPANY (Aziende)
-
-```
-Aggregazione "XYZ Corp"
-├── 🏢 Sede Centrale Milano
-├── 🏢 Succursale Roma
-├── 🏢 Succursale Napoli
-└── Condivisione: Chat umana + RAG cross-tenant
-```
-
-**Caratteristiche:**
-- Un tenant può appartenere a **N aggregazioni** contemporaneamente
-- Aggregazione/disaggregazione **libera e consensuale**
-- **No parent-child**: tutti peer
-
----
-
-## 📦 Ruolo dei Componenti
-
-| Componente | Ruolo | Database |
-|------------|-------|----------|
-| **FlorenceEGI** | Core ecosistema, tutte le tabelle condivise | `core.*` |
-| **EGI-HUB** | Dashboard admin, gestione progetti e aggregazioni | `core.aggregations`, `core.aggregation_members` |
-| **NATAN_LOC** | App RAG per PA, tabelle specifiche | `natan.*` + `core.*` (via connection) |
-| **NATAN_COMPANY** | App RAG per Aziende | `natan.*` + `core.*` |
-| **NATAN** | **⚠️ DEPRECATO** | - |
-
----
-
-## 🎨 EGI: Il Contenitore Universale
-
-```
-                    core.egis
-                         │
-       ┌─────────────────┼─────────────────┐
-       │                 │                 │
-   context=             context=          context=
-   'pa_document'       'artwork'         'contract'
-       │                 │                 │
-   NATAN_LOC        FlorenceArtEGI      Notaio App
-```
-
-**EGI = Eco + Goods + Invent**
-- **Eco**: Contributo ambientale (EPP)
-- **Goods**: Valore tangibile
-- **Invent**: Innovazione certificata
-
-Ogni progetto usa la stessa tabella `egis` con `context` diverso.
-
----
-
-## 🔐 Cross-Tenant RAG
-
-### Flusso Query
-
-```
-User Query + scope="aggregation:456"
-    ↓
-Fetch tenant_ids da aggregation_members (status='accepted')
-    ↓
-MongoDB: tenant_id: {$in: [123, 456, 789]}
-    ↓
-Risultati da TUTTI i tenant del grappolo
-```
-
-### UI Scope Selector
-
-```
-🔍 Cerca in: [Solo mio ente ▾]
-             [Comuni Versilia]
-             [Costa Toscana Turismo]
-             [Tutte le mie aggregazioni]
+Aggregazione "Smart City Toscana"
+├── 🏛️ Firenze (LOC)
+├── 🏢 Public Utilities SpA (COMPANY)
+└── 🎓 Università (ORG)
+    └── Condivisione: RAG Knowledge Base + Progetti Comuni
 ```
 
 ---
 
-## 🚀 Prossimi Passi
+## 📦 Ruolo dei Componenti v2.1
 
-1. ✅ Documentazione architettura approvata
-2. ⬜ Creare migrazioni con schema prefix (`core.`, `natan.`)
-3. ⬜ Aggiornare Models con connection/schema corretti
-4. ⬜ Deprecare repository NATAN
-5. ⬜ Implementare RAG cross-tenant
-6. ⬜ UI Context Switcher per scope query
+| Componente | Ruolo | Accesso DB |
+|------------|-------|------------|
+| **FlorenceEGI** | **SSOT** (Single Source of Truth). Gestisce Users, Roles, Core Logic. | `core.*` (Owner) |
+| **EGI-HUB** | **Orchestrator**. Dashboard super-admin, approvazione progetti. | `core.*`, `aggregations` |
+| **NATAN_LOC** | **Vertical Application**. Interfaccia per PA. Usa ruoli EGI. | `natan.*` (Owner) + `core.*` (Consumer) |
+| **NATAN_COMPANY** | **Vertical Application**. Interfaccia per Aziende. | `natan.*` (Owner) + `core.*` (Consumer) |
 
 ---
 
@@ -220,8 +195,6 @@ Risultati da TUTTI i tenant del grappolo
 | `NATAN_COMPANY` | NATAN Company | Aziende private |
 | `NATAN_ORG` | NATAN Org | Organizzazioni non-profit |
 
-> **Nota**: "LOC" = Local Authority (PA italiana). Nome legacy mantenuto per compatibilità.
-
 ---
 
-*Documento approvato - 2026-01-07*
+*Documento aggiornato e approvato il 2026-01-09 - v2.1 (Architectural Cleanup Release)*
