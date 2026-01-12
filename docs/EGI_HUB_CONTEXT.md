@@ -1,185 +1,185 @@
-# 🌐 EGI-HUB - Contesto per Copilot# 🌐 EGI-HUB - Contesto per Copilot
+# 🌐 EGI-HUB - Contesto Operativo
 
+**Versione**: 2.0  
+**Data**: 2026-01-12  
+**Riferimento Architettura**: `01_PLATFORME_ARCHITECTURE_03.md`
 
+---
 
-## Ruolo di EGI-HUB## Stato Attuale (Dicembre 2025)
+## Ruolo di EGI-HUB
 
+**EGI-HUB è il Control Plane** dell'ecosistema FlorenceEGI.
 
+**È:**
 
-**EGI-HUB è l'applicazione centrale** che sta **SOPRA** tutta la gerarchia dell'ecosistema FlorenceEGI.EGI-HUB è il layer di coordinamento centrale per l'ecosistema FlorenceEGI.
+- ✅ L'applicazione SuperAdmin centrale
+- ✅ Frontend React + Backend Laravel API
+- ✅ Orchestratore di tutti i project verticali
+- ✅ Gestore delle aggregazioni P2P tra tenant
 
+**NON È:**
 
+- ❌ Un package Laravel da installare via composer
+- ❌ Una libreria
+- ❌ Un modulo di EGI
 
-**NON È:**### ✅ Già Implementato
+---
 
-- ❌ Un package Laravel
+## Stato Attuale (Gennaio 2026)
 
-- ❌ Una libreria da installare via composer1. **Sistema Aggregazioni P2P** - Permette ai tenant (Comuni) di formare federazioni consensuali
+### ✅ Già Implementato
 
-- ❌ Un modulo di EGI2. **Modelli creati**:
-
+1. **Sistema Aggregazioni P2P** - Permette ai tenant di formare federazioni consensuali
+2. **Modelli creati**:
    - `src/Models/Aggregation.php`
+   - `src/Models/AggregationMember.php`
+3. **Trait**: `src/Traits/HasAggregations.php` (usato da Tenant.php nei verticali)
+4. **Migrazioni**:
+   - `2025_11_28_000001_create_aggregations_table.php`
+   - `2025_11_28_000002_create_aggregation_members_table.php`
+5. **Service Provider**: `src/HubServiceProvider.php`
 
-**È:**   - `src/Models/AggregationMember.php`
+### 🔲 Da Implementare
 
-- ✅ L'applicazione SuperAdmin centrale3. **Trait**: `src/Traits/HasAggregations.php` (già integrato in Tenant.php di NATAN_LOC)
+1. **API Controller per Aggregazioni**
 
-- ✅ Frontend React + Backend Laravel API4. **Migrazioni**: 
+   - CRUD aggregazioni
+   - Sistema inviti (invite, accept, reject)
+   - Lista membri
+   - Uscita volontaria
 
-- ✅ Aggrega dati da TUTTI i tenant (EGI, NATAN_LOC, futuri)   - `database/migrations/2025_11_28_000001_create_aggregations_table.php`
+2. **Frontend Selector**
 
-   - `database/migrations/2025_11_28_000002_create_aggregation_members_table.php`
+   - Widget per scelta fonti dati nelle query
+   - Visualizzazione aggregazioni disponibili
 
----5. **Service Provider**: `src/HubServiceProvider.php`
+3. **Integrazione Python Service**
+   - Passare `tenant_ids[]` a MongoDB per query multi-tenant
+   - Aggiornare RAG service
 
+---
 
+## Architettura
 
-## Architettura### 🔲 Da Implementare (Prossimi Passi)
-
-
-
-```1. **API Controller per Aggregazioni**
-
-                    ┌─────────────────────────────────┐   - CRUD aggregazioni
-
-                    │           EGI-HUB               │   - Sistema inviti (invite, accept, reject)
-
-                    │    (SuperAdmin Central App)     │   - Lista membri
-
-                    │                                 │   - Uscita volontaria
-
+```
+                    ┌─────────────────────────────────┐
+                    │           EGI-HUB               │
+                    │      (Control Plane)            │
+                    │                                 │
                     │  Frontend: React + TS + Vite    │
-
-                    │  Backend: Laravel API-only      │2. **Frontend Selector**
-
-                    │  Porta Frontend: 5174           │   - Widget per scelta fonti dati nelle query
-
-                    │  Porta Backend: 8001            │   - Visualizzazione aggregazioni disponibili
-
+                    │  Backend: Laravel API-only      │
+                    │  DB: florenceegi (schema core)  │
                     └─────────────────┬───────────────┘
-
-                                      │3. **Integrazione Python Service**
-
-                    ┌─────────────────┼─────────────────┐   - Passare `tenant_ids[]` a MongoDB per query multi-tenant
-
-                    │                 │                 │   - Aggiornare RAG service
-
+                                      │
+                    ┌─────────────────┼─────────────────┐
+                    │                 │                 │
                     ▼                 ▼                 ▼
-
-           ┌───────────────┐ ┌───────────────┐ ┌───────────────┐4. **NATAN_DDQF** (Document-Driven Question Framework)
-
-           │      EGI      │ │   NATAN_LOC   │ │   (Futuro)    │   - Framework per domande basate su documenti
-
-           │   Porta 8004  │ │   Porta 8000  │ │               │
-
-           │   TENANT      │ │   TENANT      │ │   TENANT      │## Progetti Collegati
-
+           ┌───────────────┐ ┌───────────────┐ ┌───────────────┐
+           │   NATAN_LOC   │ │  PartnerHub   │ │   (Futuro)    │
+           │ (Verticale PA)│ │ (Trasversale) │ │               │
+           │   :7000       │ │               │ │               │
            └───────────────┘ └───────────────┘ └───────────────┘
+```
 
-```| Progetto | Path | Descrizione |
+---
 
-|----------|------|-------------|
+## Database
 
----| **NATAN_LOC** | `/home/fabio/NATAN_LOC` | AI Assistant per PA - Usa EGI-HUB come dipendenza |
+EGI-HUB accede al **database unificato** PostgreSQL:
 
-| **EGI** | `/home/fabio/EGI` | FlorenceArtEGI - Piattaforma NFT |
+- **Host**: AWS RDS
+- **Database**: `florenceegi`
+- **Schema**: `core` (primario)
+- **DB_SEARCH_PATH**: `core,public`
+
+### Tabelle Gestite
+
+| Tabella               | Schema | Descrizione             |
+| --------------------- | ------ | ----------------------- |
+| `system_projects`     | core   | Project dell'ecosistema |
+| `aggregations`        | core   | Federazioni P2P         |
+| `aggregation_members` | core   | Membri aggregazioni     |
+| `users`               | core   | Utenti (SSOT)           |
+| `roles`               | core   | Ruoli (SSOT)            |
+| `tenants`             | core   | Tenant (SSOT)           |
+
+---
+
+## Progetti Collegati
+
+| Progetto      | Path                    | Relazione                             |
+| ------------- | ----------------------- | ------------------------------------- |
+| **NATAN_LOC** | `/home/fabio/NATAN_LOC` | Verticale PA - usa EGI-HUB traits     |
+| **EGI**       | `/home/fabio/EGI`       | FlorenceArtEGI - futuro verticale Art |
+
+---
+
+## Come Usare EGI-HUB da Verticali
+
+### Da NATAN_LOC
+
+```php
+use FlorenceEgi\Hub\Traits\HasAggregations;
+
+class Tenant extends Model {
+    use HasAggregations;
+
+    // Metodi disponibili:
+    // $tenant->getActiveAggregations()
+    // $tenant->getAccessibleTenantIds()
+    // $tenant->canAccessTenant($tenantId)
+    // $tenant->createAggregation($name, $options)
+}
+```
+
+---
 
 ## Struttura Progetto
 
-## Come Usare EGI-HUB
-
 ```
-
-EGI-HUB/### Da NATAN_LOC
-
-├── frontend/           # React SPA (SuperAdmin Dashboard)```php
-
-│   ├── src/// Già configurato in composer.json
-
-│   │   ├── components/use FlorenceEgi\Hub\Traits\HasAggregations;
-
-│   │   ├── pages/
-
-│   │   │   ├── ai/class Tenant extends Model {
-
-│   │   │   ├── padmin/    use HasAggregations;
-
-│   │   │   ├── platform/    
-
-│   │   │   ├── tenants/      # Gestione tenant    // Metodi disponibili:
-
-│   │   │   ├── system/       # Impostazioni sistema    // $tenant->getActiveAggregations()
-
-│   │   │   └── tokenomics/    // $tenant->getAccessibleTenantIds()
-
-│   │   └── App.tsx    // $tenant->canAccessTenant($tenantId)
-
-│   ├── vite.config.ts    // $tenant->createAggregation($name, $options)
-
-│   └── package.json}
-
-│```
-
-├── src/                # Laravel API Backend
-
-│   ├── Http/Controllers/Api/## File di Riferimento
-
-│   │   ├── Superadmin/
-
-│   │   │   ├── DashboardController.php- **README principale**: `/home/fabio/EGI-HUB/README.md`
-
-│   │   │   ├── AiConsultationsController.php- **NATAN_LOC stato**: `docs/NATAN_LOC_STATO_DELLARTE.md`
-
-│   │   │   └── ...- **Standard OS3**: `docs/Oracode_Systems/`
-
-│   │   └── AggregationController.php- **Regole enterprise**: `docs/ULTRA_EXCELLENCE_ENTERPRISE_RULES.md`
-
-│   ├── Models/
-
-│   └── HubServiceProvider.php## Database
-
+EGI-HUB/
+├── frontend/               # React SPA (SuperAdmin Dashboard)
+│   ├── src/
+│   │   ├── components/
+│   │   └── pages/
+│   └── package.json
 │
-
-├── routes/api.php      # API routes (JSON only)EGI-HUB usa il **MariaDB condiviso** con NATAN_LOC e EGI:
-
-├── config/- Host: localhost
-
-├── database/- Database: EGI
-
-└── docs/- Tabelle: `aggregations`, `aggregation_members`
-
-    ├── ARCHITECTURE.md
-    └── SUPERADMIN_MIGRATION_PLAN.md
+├── backend/                # Laravel Backend
+│   ├── app/
+│   ├── routes/
+│   └── config/
+│
+├── src/                    # Package FlorenceEgi\Hub
+│   ├── Models/
+│   │   ├── Aggregation.php
+│   │   └── AggregationMember.php
+│   ├── Traits/
+│   │   └── HasAggregations.php
+│   └── HubServiceProvider.php
+│
+├── database/
+│   └── migrations/
+│
+└── docs/
+    ├── 01_PLATFORME_ARCHITECTURE_03.md  ← SSOT
+    └── EGI_HUB_CONTEXT.md               ← Questo file
 ```
 
 ---
 
-## Fonti Dati
-
-EGI-HUB prende dati da:
-
-| Fonte | Database | Tipo Dati |
-|-------|----------|-----------|
-| **EGI** | DB EGI | Users, NFTs, AI consultations, etc. |
-| **NATAN_LOC** | DB NATAN | Tenants PA, Documents, AI usage |
-| **Tabelle Hub** | DB EGI-HUB | Aggregations, Hub settings, API tokens |
-
----
-
-## Sezioni SuperAdmin
+## Sezioni SuperAdmin (Roadmap)
 
 1. **Dashboard** - Overview globale
-2. **Gestione AI** - Consultazioni, crediti, features, statistiche
-3. **Tokenomics** - Egili, Equilibrium
-4. **Gestione Piattaforma** - Ruoli, pricing, promozioni, calendario
-5. **Padmin OS3** - Analizzatore violazioni codice
-6. **Gestione Tenant** - Lista tenant, configurazioni, piani, attività, storage
-7. **Impostazioni Sistema** - Config, domini, sicurezza, notifiche
+2. **Gestione Projects** - Verticali dell'ecosistema
+3. **Gestione Tenants** - Clienti finali (cross-project view)
+4. **Aggregazioni** - Federazioni P2P
+5. **Gestione AI** - Crediti, features, statistiche
+6. **Impostazioni Sistema** - Config, sicurezza
 
 ---
 
 ## Riferimenti
 
-- **Architettura dettagliata**: `docs/ARCHITECTURE.md`
+- **Architettura SSOT**: `docs/01_PLATFORME_ARCHITECTURE_03.md`
 - **Piano migrazione**: `docs/SUPERADMIN_MIGRATION_PLAN.md`
 - **Standard OS3**: `docs/Oracode_Systems/`

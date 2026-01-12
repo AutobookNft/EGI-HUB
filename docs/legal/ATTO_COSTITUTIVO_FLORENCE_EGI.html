@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atto Costitutivo - FLORENCE EGI S.R.L.</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Playfair+Display:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Crimson Text', serif;
+            font-size: 12pt;
+            line-height: 1.5;
+            color: #000;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #D4A574, #C89352);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(212, 165, 116, 0.4);
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .print-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 165, 116, 0.6);
+        }
+
+        .container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 25mm 25mm;
+            box-sizing: border-box;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 18pt;
+            text-align: center;
+            text-transform: uppercase;
+            margin-bottom: 2em;
+            color: #1a1a1a;
+            border-bottom: 2px solid #D4A574;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 14pt;
+            margin-top: 1.5em;
+            margin-bottom: 0.8em;
+            color: #1a1a1a;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        h3 {
+            font-family: 'Crimson Text', serif;
+            font-size: 13pt;
+            font-weight: 600;
+            margin-top: 1.2em;
+            margin-bottom: 0.5em;
+            color: #333;
+        }
+
+        p {
+            margin-bottom: 0.8em;
+            text-align: justify;
+        }
+
+        ul, ol {
+            margin-bottom: 0.8em;
+            padding-left: 1.5em;
+        }
+
+        li {
+            margin-bottom: 0.4em;
+            text-align: justify;
+        }
+
+        .meta-info {
+            font-size: 10pt;
+            color: #666;
+            text-align: right;
+            margin-bottom: 2em;
+            font-style: italic;
+        }
+
+        .highlight {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-left: 4px solid #D4A574;
+            margin: 1em 0;
+        }
+
+        .signature-block {
+            margin-top: 4em;
+            display: flex;
+            justify-content: space-between;
+            page-break-inside: avoid;
+        }
+
+        .signature {
+            width: 45%;
+            border-top: 1px solid #000;
+            padding-top: 5px;
+            text-align: center;
+            font-style: italic;
+        }
+
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+
+        @media print {
+            body {
+                background: none;
+                padding: 0;
+            }
+            .container {
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+            .print-button {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="print-button" onclick="window.print()">📄 Salva come PDF</button>
+
+    <div class="container">
+        
+        <div class="meta-info">
+            Data: 9 Gennaio 2026<br>
+            Versione: 1.0 (Draft)
+        </div>
+
+        <h1>Atto Costitutivo e Statuto<br><span style="font-size: 0.8em; font-weight: normal; text-transform: none;">Florence EGI S.r.l.</span></h1>
+
+        <h2>1. Costituzione</h2>
+        <p>È costituita una società a responsabilità limitata denominata:</p>
+        <p style="text-align: center; font-size: 1.2em; font-weight: bold;">"FLORENCE EGI S.R.L."</p>
+        <p style="text-align: center; font-style: italic;">(Opzionale consigliata: "FLORENCE EGI S.R.L. SOCIETÀ BENEFIT")</p>
+
+        <h2>2. Sede</h2>
+        <p>La società ha sede in [Città, es. Firenze], indirizzo [Indirizzo].<br>
+        Il dislocamento della sede operativa non comporta modifica statutaria.</p>
+
+        <h2>3. Durata</h2>
+        <p>La durata della società è fissata fino al <strong>31 dicembre 2100</strong>.</p>
+
+        <h2>4. Capitale Sociale e Soci</h2>
+        <p>Il capitale sociale è fissato in Euro <strong>10.000,00 (diecimila/00)</strong> ed è sottoscritto come segue:</p>
+        <ol>
+            <li><strong>Fabio Cherici</strong>: Quota nominale di Euro 6.000,00 pari al <strong>60%</strong> del capitale sociale.</li>
+            <li><strong>Edoardo Boccherini</strong>: Quota nominale di Euro 1.400,00 pari al <strong>14%</strong> del capitale sociale.</li>
+            <li><strong>Riccardo Rami</strong>: Quota nominale di Euro 1.300,00 pari al <strong>13%</strong> del capitale sociale.</li>
+            <li><strong>Fabio Gianni</strong>: Quota nominale di Euro 1.300,00 pari al <strong>13%</strong> del capitale sociale.</li>
+        </ol>
+        <p><strong>TOTALE: 100%</strong></p>
+
+        <h2>5. Oggetto Sociale (MiCA-Safe & Innovativo)</h2>
+        <p>La società ha per oggetto lo sviluppo, la produzione e la commercializzazione di prodotti o servizi innovativi ad alto valore tecnologico, e più specificamente:</p>
+
+        <h3>A) Attività Prevalente (Tecnologica)</h3>
+        <ol>
+            <li><strong>Sviluppo di piattaforme Software-as-a-Service (SaaS)</strong> per la certificazione digitale, la tracciabilità e la valorizzazione di beni fisici e digitali mediante tecnologie a registro distribuito (Distributed Ledger Technology / Blockchain).</li>
+            <li><strong>Creazione di "Eco Goods Invent" (EGI)</strong>: certificati digitali di autenticità e proprietà intellettuale.</li>
+            <li><strong>Sviluppo di algoritmi di Intelligenza Artificiale</strong> (inclusi sistemi RAG e LLM) per l'analisi dati, la valutazione asset e l'assistenza utente (Progetto N.A.T.A.N.).</li>
+        </ol>
+
+        <h3>B) Attività Complementari</h3>
+        <ol>
+            <li>Gestione di marketplace per l'incontro tra domanda e offerta di beni certificati.</li>
+            <li>Consulenza in ambito IT, blockchain integration e digital trasformation.</li>
+            <li>Attività di marketing digitale e promozione artistica/culturale.</li>
+        </ol>
+
+        <div class="highlight">
+            <h3>C) ESCLUSIONI ESPLICITE (Clausola MiCA-Safe)</h3>
+            <p>Sono <strong>espressamente escluse</strong> dall'oggetto sociale:</p>
+            <ol>
+                <li>L'attività di custodia di criptovalute o chiavi private per conto terzi (Custodial Wallet Provider).</li>
+                <li>L'attività di cambio valuta virtuale/legale o valuta virtuale/virtuale (Exchange).</li>
+                <li>La gestione di piattaforme di negoziazione di strumenti finanziari o cripto-asset qualificabili come tali.</li>
+                <li>La raccolta del risparmio tra il pubblico e ogni attività riservata per legge a iscritti in albi protetti o intermediari finanziari (TUB/TUF).</li>
+            </ol>
+            <p style="font-style: italic;">La società si avvale di partner terzi autorizzati (PSP, CASP/EMI) per qualsiasi operazione di pagamento o transazione finanziaria.</p>
+        </div>
+
+        <h3>D) Finalità di Beneficio Comune (Se Società Benefit)</h3>
+        <p>La società persegue altresì finalità di beneficio comune, operando in modo responsabile, sostenibile e trasparente, impegnandosi a destinare una quota delle risorse (tramite meccanismi automatici EPP - Environmental Protection Projects) a progetti di rigenerazione ambientale, riforestazione e tutela della biodiversità.</p>
+
+        <h2>6. Proprietà Intellettuale</h2>
+        <p>Tutto il software, i codici sorgente, i marchi ("FlorenceEGI", "Oracode", "N.A.T.A.N."), i domini, i brevetti e ogni altro asset immateriale sviluppato dai soci per conto della società o conferito in essa, sono di <strong>proprietà esclusiva della società FLORENCE EGI S.R.L.</strong>.</p>
+        <p>Nessun socio vanta diritti autonomi sul software sviluppato nell'ambito del progetto.</p>
+
+        <h2>7. Amministrazione</h2>
+        <p>L'amministrazione della società è affidata a (scegliere):</p>
+        <ul>
+            <li>Amministratore Unico: <strong>Fabio Cherici</strong>.</li>
+            <li>oppure Consiglio di Amministrazione (CdA).</li>
+        </ul>
+        <p>All'organo amministrativo spettano i più ampi poteri per la gestione ordinaria e straordinaria.</p>
+
+        <h2>8. Trasferimento Quote</h2>
+        <p>Le quote sono trasferibili per atto tra vivi e per successione a causa di morte.<br>
+        (Opzionale: Inserire clausola di <strong>Prelazione</strong> a favore degli altri soci in caso di vendita a terzi).</p>
+
+        <h2>9. Utili e EPP</h2>
+        <p>Gli utili netti risultanti dal bilancio, dedotto il 5% per la riserva legale, saranno ripartiti tra i soci in misura proporzionale alle quote possedute, salvo diversa deliberazione dell'assemblea che potrà destinarli a riserva o a scopi di beneficio comune (EPP) in coerenza con la mission aziendale e gli impegni statutari.</p>
+
+        <h2>10. Spese di Costituzione</h2>
+        <p>Le spese per la costituzione della presente società sono a carico della società stessa.</p>
+
+        <br><br><br>
+        
+        <div class="signature-block">
+            <div class="signature">
+                Fabio Cherici
+            </div>
+            <div class="signature">
+                Edoardo Boccherini
+            </div>
+        </div>
+        <br><br>
+        <div class="signature-block">
+             <div class="signature">
+                Riccardo Rami
+            </div>
+            <div class="signature">
+                Fabio Gianni
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
