@@ -51,6 +51,16 @@ use App\Http\Controllers\Api\Superadmin\PadminStatisticsController;
 
 /*
 |--------------------------------------------------------------------------
+| Ecosystem Public Routes (EGI-HUB-HOME)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('ecosystem')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Api\EcosystemController::class, 'index']);
+    Route::get('/metrics', [\App\Http\Controllers\Api\EcosystemController::class, 'metrics']);
+});
+
+/*
+|--------------------------------------------------------------------------
 | Authentication Routes (Public)
 |--------------------------------------------------------------------------
 */
