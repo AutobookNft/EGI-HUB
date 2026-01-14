@@ -150,72 +150,99 @@ class EcosystemController extends Controller
         }
 
         // --- MAIN VIEW (Default) ---
-        // TODO: In Phase 4, fetch status from DB 'projects' table
+        // 5 ORBITS + CORE (Single-Question Design Philosophy)
         $nodes = [
+            // CORE: EGI
             'core' => [
-                'label' => 'HUB',
-                'tagline' => 'Centro di Controllo',
+                'label' => 'EGI',
+                'tagline' => "L'unità che rende tutto possibile",
                 'cat' => 'CORE',
                 'color' => $colors['active']['hub'],
-                'desc' => 'Il cuore pulsante dell\'ecosistema.',
-                'bullets' => ['Governance', 'Identity', 'System Status'],
-                'egi_link' => 'Il punto di partenza.',
-                'route' => 'https://egi-hub.13.53.205.215.sslip.io',
+                'desc' => 'Cos\'è un EGI, cosa significa "egizzare", perché è diverso da NFT.',
+                'bullets' => ['Wrapper<T> universale', 'Certificazione on-chain', 'Valore reale'],
+                'egi_link' => 'Se esiste, egizzalo. Se lo egizzi, vale.',
+                'route' => '#detail-egi', // Opens detail panel
+                'cta' => 'Vedi esempi reali',
+                'question' => 'Che cos\'è l\'unità che rende tutto possibile?',
                 'status' => 'active'
             ],
-            // 1. GLI EGIS
-            'egis' => [
-                'label' => 'GLI EGIS',
-                'tagline' => 'Asset & Collezioni',
-                'cat' => 'ASSETS',
-                'color' => 0xff00ff, // Magenta for Assets/Art
-                'desc' => 'Tutto ciò che è stato Egizzato: Arte, Beni, Documenti.',
-                'bullets' => ['Marketplace', 'NFT Collections', 'My Assets'],
-                'egi_link' => 'Se esiste, vale.',
-                'route' => 'https://egi.13.53.205.215.sslip.io',
-                'status' => 'active'
-            ],
-            // 2. PROGETTI
+            
+            // ORBIT 1: PROGETTI
             'progetti' => [
                 'label' => 'PROGETTI',
-                'tagline' => 'Applicazioni & Servizi',
-                'cat' => 'APPS',
-                'color' => 0x0088ff, // Blue for Projects/Apps
-                'desc' => 'Le applicazioni verticali dell\'ecosistema.',
-                'bullets' => ['FlorenceArtEGI', 'PartnerHub', 'Finance'],
-                'egi_link' => 'Gli strumenti per operare.',
-                'route' => '/projects', // Internal Client Route
+                'tagline' => 'FlorenceEGI · NATAN · EGI-INFO · Satellite',
+                'cat' => 'ECOSISTEMA',
+                'color' => 0x00ffdd, // Cyan
+                'desc' => 'Le applicazioni concrete dell\'ecosistema EGI.',
+                'bullets' => ['FlorenceEGI (Marketplace)', 'NATAN (AI Compliance)', 'EGI-INFO (Docs)', 'Programmi satellite'],
+                'egi_link' => 'Gli strumenti operativi.',
+                'route' => '/projects', // Internal SPA route
+                'question' => 'Quali mondi concreti esistono?',
                 'status' => 'active'
             ],
-            // 3. AMBIENTE
+            
+            // ORBIT 2: AMBIENTE
             'ambiente' => [
                 'label' => 'AMBIENTE',
-                'tagline' => 'Impatto & Rigenerazione',
+                'tagline' => 'EPP · Flussi · Progetti Reali',
                 'cat' => 'IMPACT',
-                'color' => 0x00ff00, // Green for Environment
-                'desc' => 'Il monitoraggio dell\'impatto ambientale reale.',
-                'bullets' => ['EPP Dashboard', 'Riforestazione', 'Certificati Green'],
-                'egi_link' => 'Rigenera mentre operi.',
-                'route' => '#',
+                'color' => $colors['active']['epp'], // Green
+                'desc' => 'Monitoraggio dell\'impatto ambientale certificato.',
+                'bullets' => ['Environmental Protection Protocol', 'Percentuali trasparenti', 'Progetti di riforestazione verificati'],
+                'egi_link' => 'Dove va l\'impatto economico.',
+                'route' => '#detail-ambiente', // Detail panel or future EPP dashboard
+                'question' => 'Dove va l\'impatto?',
                 'status' => 'active'
             ],
-            // 4. ORACODE
+            
+            // ORBIT 3: ORACODE
             'oracode' => [
                 'label' => 'ORACODE',
-                'tagline' => 'Verità & Codice',
-                'cat' => 'ETHICS',
-                'color' => 0xffaa00, // Gold/Orange for Truth/Code
-                'desc' => 'Le regole, l\'etica e la documentazione del sistema.',
-                'bullets' => ['White Paper', 'Documentation', 'Compliance'],
-                'egi_link' => 'Il codice non mente.',
-                'route' => '#',
+                'tagline' => 'OS3 · OS4 · NATAN Method',
+                'cat' => 'INTELLIGENZA',
+                'color' => $colors['active']['oracode'], // Red
+                'desc' => 'Il sistema operativo cognitivo che governa l\'ecosistema.',
+                'bullets' => ['OS3 (AI discipline)', 'OS4 (Human education)', 'NATAN AI framework'],
+                'egi_link' => 'Non è una piattaforma. È un organismo.',
+                'route' => '#detail-oracode',
+                'question' => 'Che intelligenza governa questo sistema?',
                 'status' => 'active'
             ],
+            
+            // ORBIT 4: INFO
+            'info' => [
+                'label' => 'INFO',
+                'tagline' => 'Verità completa, versionata',
+                'cat' => 'DOCUMENTAZIONE',
+                'color' => $colors['active']['info'], // Blue
+                'desc' => 'Portal alla documentazione completa certificata.',
+                'bullets' => ['White papers', 'Technical docs', 'Version history'],
+                'egi_link' => 'Qui c\'è la verità completa.',
+                'route' => 'https://egi-info.13.53.205.215.sslip.io',
+                'question' => 'Dove sono i dettagli?',
+                'status' => 'active'
+            ],
+            
+            // ORBIT 5: CHI SIAMO
+            'corporate' => [
+                'label' => 'CHI SIAMO',
+                'tagline' => 'Frangette · Team · Legal · Contatti',
+                'cat' => 'CORPORATE',
+                'color' => 0x9932cc, // Purple/Orchid
+                'desc' => 'Chi c\'è dietro e chi risponde.',
+                'bullets' => ['Frangette SRL', 'Team members', 'Legal framework', 'Contatti diretti'],
+                'egi_link' => 'Trasparenza totale.',
+                'route' => '#detail-corporate',
+                'question' => 'Chi c\'è dietro e chi risponde?',
+                'status' => 'active'
+            ],
+            
             'orbitalConfig' => [
-                ['id' => 'egis', 'orbit' => 1],
                 ['id' => 'progetti', 'orbit' => 1],
-                ['id' => 'ambiente', 'orbit' => 1],
-                ['id' => 'oracode', 'orbit' => 1], // Balanced 4-point orbit
+                ['id' => 'ambiente', 'orbit' => 2],
+                ['id' => 'oracode', 'orbit' => 3],
+                ['id' => 'info', 'orbit' => 4],
+                ['id' => 'corporate', 'orbit' => 5],
             ]
         ];
 
