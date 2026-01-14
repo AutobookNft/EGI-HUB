@@ -190,7 +190,7 @@ class EcosystemController extends Controller
                 'desc' => 'Monitoraggio dell\'impatto ambientale certificato.',
                 'bullets' => ['Environmental Protection Protocol', 'Percentuali trasparenti', 'Progetti di riforestazione verificati'],
                 'egi_link' => 'Dove va l\'impatto economico.',
-                'route' => '#detail-ambiente', // Detail panel or future EPP dashboard
+                'route' => '/ambiente', // ⭐ Internal page with hyperspace
                 'question' => 'Dove va l\'impatto?',
                 'status' => 'active'
             ],
@@ -204,7 +204,7 @@ class EcosystemController extends Controller
                 'desc' => 'Il sistema operativo cognitivo che governa l\'ecosistema.',
                 'bullets' => ['OS3 (AI discipline)', 'OS4 (Human education)', 'NATAN AI framework'],
                 'egi_link' => 'Non è una piattaforma. È un organismo.',
-                'route' => '#detail-oracode',
+                'route' => '/oracode', // ⭐ Internal page with hyperspace
                 'question' => 'Che intelligenza governa questo sistema?',
                 'status' => 'active'
             ],
@@ -223,16 +223,16 @@ class EcosystemController extends Controller
                 'status' => 'active'
             ],
             
-            // ORBIT 5: CHI SIAMO
+            // ORBIT 5: CORPORATE
             'corporate' => [
-                'label' => 'CHI SIAMO',
+                'label' => 'CORPORATE',
                 'tagline' => 'Frangette · Team · Legal · Contatti',
                 'cat' => 'CORPORATE',
                 'color' => 0x9932cc, // Purple/Orchid
                 'desc' => 'Chi c\'è dietro e chi risponde.',
                 'bullets' => ['Frangette SRL', 'Team members', 'Legal framework', 'Contatti diretti'],
                 'egi_link' => 'Trasparenza totale.',
-                'route' => '#detail-corporate',
+                'route' => '/corporate', // ⭐ Internal page with hyperspace
                 'question' => 'Chi c\'è dietro e chi risponde?',
                 'status' => 'active'
             ],
