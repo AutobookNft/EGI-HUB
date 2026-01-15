@@ -145,6 +145,20 @@ Database: florenceegi (AWS RDS PostgreSQL)
     └── (VUOTO - Solo per compatibilità PostgreSQL)
 ```
 
+```
+
+### 🧠 Pattern: Monotenant vs Multitenant
+
+Questa architettura unificata rende banale la differenza tra progetti mono e multi tenant. Tutto dipende dalla configurazione e dal numero di record in `tenants`.
+
+| Tipo Progetto | Configurazione | Struttura Dati | Esempio |
+|---------------|----------------|----------------|---------|
+| **Multitenant** | `is_multitenant: true` | 1 Project → N Tenants | **NATAN_LOC** (Comuni diversi, dati isolati) |
+| **Monotenant** | `is_multitenant: false` | 1 Project → 1 Tenant | **FlorenceEGI** (Gestione centrale, users admin) |
+| **Ibrido** | `is_multitenant: true` | 1 Project → 1 SysTenant + N ClientTenants | **PartnerHub** (Tenant "Ops" + Clienti) |
+
+**Vantaggio**: Il codice di autenticazione (`WHERE tenant_id = ?`) non cambia mai. Un'app monotenant è semplicemente un'app che accetta user solo da un specifico tenant_id.
+
 ---
 
 ## 🏷️ Terminologia Definitiva
@@ -172,6 +186,21 @@ I **Tenants** sono i clienti finali che utilizzano i project.
 | Partner ABC | Partner | PartnerHub | PartnerHub + NATAN_LOC |
 
 **Nota**: Un tenant appartiene a un `system_project_id` principale, ma può essere accessibile da project trasversali (es. PartnerHub accede ai tenant di NATAN_LOC per billing).
+
+### 💡 Caso Speciale: Florence EGI (System Tenant)
+
+**Domanda**: Perché "Florence EGI" esiste sia come Project (`FEGI`) sia come Tenant (`FEGI`)?
+
+**Risposta**: È una best practice architetturale per garantire uniformità.
+
+1.  **Uniformità User Model**: Tutti gli utenti *devono* avere un `tenant_id`. Gli amministratori di sistema (root, staff centrale) non fanno eccezione. Invece di avere `tenant_id = NULL` e complicare le query con `OR IS NULL`, li assegniamo al "System Tenant" (Florence EGI).
+2.  **Isolamento Dati**: Il progetto madre potrebbe avere asset propri (es. una collezione NFT istituzionale). Questi dati devono essere isolati dai tenant dei clienti, proprio come i dati di un cliente sono isolati da quelli di un altro.
+3.  **Scalabilità**: Il System Tenant è trattato come un "primo tra pari". Ha permessi speciali, ma strutturalmente è identico agli altri, semplificando la logica del codice.
+
+| Entità | Ruolo | Tabella | Note |
+|--------|-------|---------|------|
+| **Project FlorenceEGI** | L'Applicazione | `system_projects` | Definisce il software che gira |
+| **Tenant Florence EGI** | Il Proprietario | `tenants` | Contiene gli utenti admin e i dati di sistema |
 
 ### Aggregazioni P2P
 

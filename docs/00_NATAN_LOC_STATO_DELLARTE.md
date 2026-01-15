@@ -1,10 +1,11 @@
 # 📊 NATAN_LOC - Stato dell'Arte del Progetto
 
-**Versione**: 2.4.0  
-**Data**: 2025-01-28  
-**Ultimo Aggiornamento**: 2025-11-28 (EGI-HUB Integration & Aggregazioni P2P)  
+**Versione**: 2.7.0  
+**Data**: 2026-01-13  
+**Ultimo Aggiornamento**: 2026-01-13 (Tracciamento costi chat EUR/CO2 + BCE exchange rate)  
 **Autore**: Padmin D. Curtis (AI Partner OS3.0) for Fabio Cherici  
-**Contesto**: FlorenceEGI - NATAN_LOC Production System
+**Contesto**: FlorenceEGI - NATAN_LOC Production System  
+**Architettura SSOT**: Vedi `01_PLATFORME_ARCHITECTURE_03.md`
 
 ---
 
@@ -12,7 +13,7 @@
 
 **NATAN_LOC** è un sistema SaaS multi-tenant per la gestione e notarizzazione di documenti con integrazione AI avanzata, sviluppato per Pubbliche Amministrazioni e aziende.
 
-**Status Attuale**: ✅ **PRODUCTION-READY** - Architettura completa implementata, RAG-Fortress Zero-Hallucination attivo, Compliance Scanner operativo, Natan Pro UI/UX redesign completato, Sistema Memoria Semantica personalizzata funzionante
+**Status Attuale**: ✅ **PRODUCTION-READY** - Architettura completa implementata, RAG-Fortress Zero-Hallucination attivo, Compliance Scanner operativo, Natan Pro UI/UX redesign completato, Sistema Memoria Semantica personalizzata funzionante, **Human Communication System completo**, **FARO implementato**
 
 **Deployment**:
 
@@ -38,17 +39,16 @@
 └──────────────┬───────────────────────┬──────────────────────┘
                │                       │
        ┌───────▼────────┐      ┌───────▼────────┐
-       │   MariaDB      │      │  Python FastAPI │
-       │  (Relational)  │      │  (AI Gateway)   │
-       │  Porta: 3306   │      │  Porta: 8001   │
-       └────────────────┘      └───────┬────────┘
-                                        │
-                                ┌───────▼────────┐
-                                │   MongoDB      │
-                                │  (Vector DB)   │
-                                │  Porta: 27017 │
-                                │  Atlas (AWS)   │
-                                └────────────────┘
+       │  PostgreSQL    │      │  Python FastAPI │
+       │  (AWS RDS)     │      │  (AI Gateway)   │
+       │  florenceegi   │      │  Porta: 8001   │
+       │  schema: natan │      └───────┬────────┘
+       │  + core        │              │
+       └────────────────┘      ┌───────▼────────┐
+                               │   MongoDB      │
+                               │  (Vector DB)   │
+                               │  Atlas (AWS)   │
+                               └────────────────┘
 ```
 
 ### **Componenti Principali**
@@ -56,9 +56,11 @@
 1. **Frontend TypeScript** - Interfaccia utente moderna
 2. **Laravel Backend** - API REST, autenticazione, business logic
 3. **Python FastAPI** - Servizio AI (embeddings, chat, RAG, USE pipeline)
-4. **MariaDB** - Database relazionale (utenti, tenant, metadata)
+4. **PostgreSQL AWS RDS** - Database relazionale unificato (`florenceegi`, schemi `core` + `natan`)
 5. **MongoDB Atlas** - Database documentale + vector search (AWS)
 6. **Redis** - Cache e sessioni (porta 6379)
+
+> 📌 **NOTA**: L'architettura database è documentata in dettaglio in `01_PLATFORME_ARCHITECTURE_03.md`
 
 ---
 
@@ -84,6 +86,8 @@
 - ✅ SEO-friendly e ARIA-compliant (WCAG 2.1 AA)
 - ✅ Responsive design (mobile-first)
 - ✅ Build ottimizzato (CSS 13.70 kB, JS 28.57 kB gzipped)
+- ✅ Componenti Human Communication (`HumanChatPanel`, `SharedBulletinBoard`)
+- ✅ Componenti Federation (`FederationPanel`)
 
 ---
 
@@ -135,11 +139,15 @@
 
 ### **Database**
 
-#### **MariaDB (Relational)**
+#### **PostgreSQL (AWS RDS - florenceegi)**
 
-- **Porta**: 3306
-- **Database**: `natan_main` (locale) / `EGI` (condiviso con EGI)
-- **Uso**: Utenti, tenant, metadata, relazioni
+- **Provider**: AWS RDS PostgreSQL
+- **Database**: `florenceegi` (unificato)
+- **Schemi**: `core` (shared), `natan` (NATAN-specific)
+- **Search Path**: `natan,core,public`
+- **Uso**: Users, tenants, roles, chat messages, memories
+
+> 📌 **SSOT**: Vedi `01_PLATFORME_ARCHITECTURE_03.md` per architettura completa
 
 #### **MongoDB Atlas (Document + Vector)**
 
@@ -251,24 +259,31 @@
 
 ## 🗄️ Database Schema
 
-### **MariaDB Tables**
+> **📌 SSOT**: Vedi `01_PLATFORME_ARCHITECTURE_03.md` per l'architettura completa.
+
+### **PostgreSQL (AWS RDS - florenceegi)**
 
 ```sql
--- Multi-tenant core
-pa_entities (tenants)
-  - id, slug, name, domain, is_active
+-- Schema: core (SHARED - Dati condivisi ecosistema)
+tenants                    -- Clienti finali (Comuni, PA, Aziende)
+  - id, name, slug, system_project_id, entity_type, is_active
 
-users
-  - id, tenant_id, email, password, ...
+users                      -- Utenti dell'ecosistema (SSOT)
+  - id, tenant_id (FK), email, name, ...
 
--- NATAN_LOC specific
-natan_chat_messages
-  - id, tenant_id, user_id, message, response, ...
+roles, permissions         -- RBAC (SSOT)
+aggregations              -- Federazioni P2P tra tenant
+aggregation_members       -- Membri delle aggregazioni
 
-natan_user_memories
+-- Schema: natan (NATAN_LOC Specific)
+natan_chat_messages       -- Chat AI per PA
+  - id, tenant_id (FK → core.tenants), user_id (FK → core.users), message, response, ...
+
+natan_user_memories       -- Memorie semantiche utente
   - id, tenant_id, user_id, memory_type, content, ...
   - Sincronizzato con MongoDB Atlas user_memories collection
-  - Rilevamento automatico memorie in chat (MemoryDetectionService)
+
+-- DB_SEARCH_PATH: natan,core,public
 ```
 
 ### **MongoDB Collections**
@@ -318,7 +333,7 @@ chat_messages
 - **Region**: `eu-north-1` (Stockholm, Svezia) - GDPR compliant
 - **EC2 Instance**: `i-0e50d9a88c7682f20` (florenceegi-staging)
 - **Private IP**: `10.0.1.121`
-- **Public IP**: `13.48.57.194`
+- **Public IP**: `13.53.205.215`
 - **VPC**: `vpc-019e351bf6db868ab`
 - **Security Group**: `sg-0c960d72011237d05`
 - **Instance Type**: `t3.small`
@@ -327,7 +342,7 @@ chat_messages
 
 - **Gestione**: Deployment automatico
 - **URL**: `https://natan.florenceegi.com`
-- **SSH**: `forge@13.48.57.194`
+- **SSH**: `forge@13.53.205.215`
 - **Path**: `/home/forge/default`
 
 ### **MongoDB Atlas**
@@ -342,7 +357,7 @@ chat_messages
 ### **Docker Services (Locale)**
 
 - **MongoDB**: `localhost:27017`
-- **MariaDB**: `localhost:3306`
+- **PostgreSQL**: `localhost:5432` (dev locale, prod su AWS RDS)
 - **Redis**: `localhost:6379`
 
 ---
@@ -427,7 +442,7 @@ chat_messages
 #### **Infrastructure**
 
 - [x] ✅ Struttura progetto creata
-- [x] ✅ Docker services configurati (MongoDB, MariaDB, Redis)
+- [x] ✅ Docker services configurati (MongoDB, PostgreSQL, Redis)
 - [x] ✅ Laravel backend setup (Laravel 12)
 - [x] ✅ Python FastAPI service setup
 - [x] ✅ Frontend TypeScript setup (Vite)
@@ -437,7 +452,7 @@ chat_messages
 
 #### **Database**
 
-- [x] ✅ MariaDB schema (multi-tenant)
+- [x] ✅ PostgreSQL schema (multi-tenant, core + natan schemas)
 - [x] ✅ MongoDB Atlas connection (SSL/TLS)
 - [x] ✅ Index MongoDB creati (5 index per performance)
 - [x] ✅ Test connessione completati (24/24 test passati)
@@ -486,21 +501,23 @@ chat_messages
 
 #### **Frontend**
 
-- [x] ✅ TypeScript setup
-- [x] ✅ Componenti base (ChatInterface, Message)
-- [x] ✅ ClaimRenderer con URS badges
-- [x] ✅ API client
+- [x] ✅ TypeScript setup (Vite + Tailwind CSS)
+- [x] ✅ **ChatInterface.ts** (58KB) - Chat completa con RAG integration
+- [x] ✅ **Message.ts** (35KB) - Rendering messaggi con claims
+- [x] ✅ **ClaimRenderer.ts** - Visualizzazione claims estratte
+- [x] ✅ **UrsBadge.ts** - Badge Ultra Reliability Score
+- [x] ✅ **FederationPanel.ts** - Gestione aggregazioni P2P
+- [x] ✅ **HumanChatPanel.ts** (14KB) - Chat umana inter-utente
+- [x] ✅ **SharedBulletinBoard.ts** (12KB) - Bacheca condivisa
+- [x] ✅ **ProjectDetail.ts** (37KB) - Dettaglio progetti
+- [x] ✅ **ProjectList.ts** (19KB) - Lista progetti
+- [x] ✅ **FARO Components** (6 file) - Form guidati OS4
+- [x] ✅ **Blade Views**: chat.blade.php, workspace.blade.php, documents/, tenants/, scrapers/
+- [x] ✅ API client (`api.ts` con tutti i metodi)
 
 ---
 
 ### **In Sviluppo** 🚧
-
-#### **Features Frontend**
-
-- [ ] 🚧 Chat UI completa (componenti base presenti)
-- [ ] 🚧 Document upload UI
-- [ ] 🚧 Notarizzazione workflow UI
-- [ ] 🚧 Dashboard tenant completa
 
 #### **Compliance Scanner**
 
@@ -619,24 +636,18 @@ chat_messages
 - [ ] Dashboard compliance regionale
 - [ ] Alert automatici per violazioni
 
-#### **WEEK 3-4: Frontend Completo**
-
-- [ ] Chat UI completa con RAG-Fortress integration
-- [ ] Document management UI
-- [ ] Compliance dashboard per comuni
-
-#### **WEEK 5-6: Production Hardening**
+#### **WEEK 3-4: Production Hardening**
 
 - [ ] Monitoring completo (Prometheus/Grafana)
 - [ ] Backup automation MongoDB Atlas
 - [ ] Disaster recovery plan
 - [ ] Performance optimization
 
-#### **WEEK 7-8: Features Avanzate**
+#### **WEEK 5-6: Features Avanzate**
 
-- [ ] Notarizzazione workflow completo
-- [ ] Tenant dashboard avanzata
-- [ ] Analytics e reporting
+- [ ] Notarizzazione workflow completo (blockchain integration)
+- [ ] Analytics e reporting avanzato
+- [ ] WebSocket real-time per Human Chat (attualmente polling)
 
 ---
 
@@ -1104,6 +1115,136 @@ Vite Build Output:
 
 ---
 
+## 📝 Changelog (2026-01-02)
+
+### **🗣️ Human Communication System**
+
+**Branch**: `feature/rivoluzione-natan`
+
+#### Sistema Comunicazione Inter-Utente
+
+Implementazione completa del sistema di comunicazione umana tra utenti dello stesso tenant e federati.
+
+**Database Schema (PostgreSQL - florenceegi)**
+
+```sql
+channels
+  - id, tenant_id, name, type (direct|group|broadcast), scope (internal|federated)
+  - created_by, is_active, created_at, updated_at
+
+channel_members
+  - id, channel_id, user_id, role (member|admin), joined_at
+
+channel_messages
+  - id, channel_id, user_id, content, is_system, created_at
+
+bulletin_posts
+  - id, tenant_id, user_id, title, content
+  - visibility (internal|federated|public), category, expires_at
+```
+
+**Backend Controllers**
+
+- ✅ `HumanChatController.php`: Gestione canali e messaggi
+
+  - `GET /api/natan/chat/human/channels` - Lista canali utente
+  - `POST /api/natan/chat/human/channels` - Crea canale
+  - `GET /api/natan/chat/human/channels/{id}` - Messaggi canale
+  - `POST /api/natan/chat/human/channels/{id}/messages` - Invia messaggio
+
+- ✅ `BulletinController.php`: Gestione bacheca condivisa
+  - `GET /api/natan/bulletin/posts` - Lista avvisi (con filtro categoria)
+  - `POST /api/natan/bulletin/posts` - Pubblica avviso
+  - `DELETE /api/natan/bulletin/posts/{id}` - Elimina avviso
+
+**Frontend Components**
+
+- ✅ `HumanChatPanel.ts`: Pannello chat con sidebar canali, area messaggi, polling automatico (10s)
+- ✅ `SharedBulletinBoard.ts`: Bacheca con categorie (📢Avvisi, 📅Eventi, 🚨Urgenti), creazione modale
+- ✅ Blade templates: `human-chat-panel.blade.php`, `bulletin-board.blade.php`
+- ✅ API Service methods: `getChannels()`, `sendHumanMessage()`, `getBulletinPosts()`, `createBulletinPost()`
+
+**Uso**
+
+```blade
+<x-natan.human-chat-panel />
+<x-natan.bulletin-board />
+```
+
+---
+
+### **📋 FARO - Document-Driven Question Framework**
+
+**Branch**: `feature/rivoluzione-natan`
+
+#### Paradigma OS4 Question Forms
+
+Sistema di form guidati che costruiscono query strutturate basate sui **facets reali** dei documenti MongoDB.
+
+**Principio Fondamentale**: "Le domande NON nascono dalla fantasia, ma dalla struttura reale dei documenti."
+
+**Tre Modalità**
+
+| Cluster       | Scopo                                 | Esempio                                              |
+| ------------- | ------------------------------------- | ---------------------------------------------------- |
+| **ORIENTATI** | Capire il quadro su un tema           | "Dammi una panoramica sul PNRR istruzione"           |
+| **DECIDI**    | Supportare una scelta tra alternative | "Quali progetti PNRR dovrei monitorare mensilmente?" |
+| **CONTROLLA** | Verificare coerenza e collegamenti    | "Questa delibera è coerente con il DUP?"             |
+
+**Architettura**
+
+```
+MongoDB atti → Aggregation Pipeline → natan_facets
+                                          ↓
+                                    Frontend Forms
+                                    (select popolati da facets reali)
+                                          ↓
+                                    Query Builder
+                                          ↓
+                                    RAG-Fortress Pipeline
+```
+
+**API Endpoints**
+
+- `GET /api/v1/faro/facets/{tenant_id}` - Facets per popolare form
+- `POST /api/v1/faro/query` - Esegui query strutturata
+
+**Frontend Components (in `app.ts`)**
+
+- ✅ `openFAROPanel()` - Apre pannello FARO
+- ✅ `createFAROPanel()` - Crea DOM dinamico con tabs
+- ✅ `loadFAROForm()` - Carica facets e renderizza form
+- ✅ Form templates: `renderFormOrientati()`, `renderFormDecidi()`, `renderFormControlla()`
+
+**Documentazione**: `/home/fabio/dev/NATAN_LOC/docs/NATAN_FARO_DESIGN.md`
+
+---
+
+### **🌐 Federation Management**
+
+**Branch**: `feature/rivoluzione-natan`
+
+#### Sistema Gestione Aggregazioni P2P
+
+Frontend per gestire le aggregazioni tra tenant (federazioni consensuali).
+
+**Frontend Components**
+
+- ✅ `FederationPanel.ts`: Visualizza aggregazioni, invia richieste di connessione
+- ✅ Integrato in `app.ts` con init automatico se `#federation-panel` presente
+
+**Backend**
+
+- ✅ `FederationService.php`: Interazione con NATAN Federation Layer
+- ✅ `FederationController.php`: API REST per aggregazioni
+
+**API Endpoints**
+
+- `GET /api/natan/federation/aggregations` - Lista aggregazioni tenant
+- `POST /api/natan/federation/connect` - Richiesta connessione
+
+---
+
 ## 📝 Changelog (2025-11-28)
 
 ### **🌐 EGI-HUB Integration - Sistema Aggregazioni P2P**
@@ -1172,16 +1313,16 @@ Utente di Scandicci può ora cercare nei documenti di Firenze E Scandicci
      - `$tenant->canAccessTenant($tenantId)`
      - `$tenant->createAggregation($name, $options)`
 
-3. **Database (MariaDB condiviso)**
-   - Nuova tabella: `aggregations`
-   - Nuova tabella: `aggregation_members`
+3. **Database (PostgreSQL - florenceegi.core)**
+   - Nuova tabella: `core.aggregations`
+   - Nuova tabella: `core.aggregation_members`
 
 #### Prossimi Passi
 
 - [ ] API Controller per gestione aggregazioni (inviti, accettazioni)
 - [ ] Frontend selector per scelta fonti dati
 - [ ] Integrazione Python service per passare `tenant_ids[]` a MongoDB
-- [ ] NATAN_DDQF integration (Document-Driven Question Framework)
+- [ ] NATAN_FARO integration (Document-Driven Question Framework)
 
 #### File di Riferimento
 
@@ -1195,14 +1336,31 @@ Utente di Scandicci può ora cercare nei documenti di Firenze E Scandicci
 
 ### Progetti Collegati
 
-| Progetto                 | Path                    | Database                | Stato                |
-| ------------------------ | ----------------------- | ----------------------- | -------------------- |
-| **EGI-HUB**              | `/home/fabio/EGI-HUB`   | -                       | ✅ Package condiviso |
-| **EGI** (FlorenceArtEGI) | `/home/fabio/EGI`       | MariaDB (condiviso)     | ✅ Integrato         |
-| **NATAN_LOC**            | `/home/fabio/NATAN_LOC` | MariaDB + MongoDB Atlas | ✅ Attivo            |
+| Progetto                     | Path                        | Database                   | Stato                |
+| ---------------------------- | --------------------------- | -------------------------- | -------------------- |
+| **NATAN** (Federation Layer) | `/home/fabio/dev/NATAN`     | PostgreSQL (condiviso)     | ✅ Core Federation   |
+| **EGI-HUB**                  | `/home/fabio/dev/EGI-HUB`   | -                          | ✅ Package condiviso |
+| **EGI** (FlorenceArtEGI)     | `/home/fabio/dev/EGI`       | PostgreSQL (condiviso)     | ✅ Integrato         |
+| **NATAN_LOC**                | `/home/fabio/dev/NATAN_LOC` | PostgreSQL + MongoDB Atlas | ✅ Attivo            |
+
+### NATAN - Federation Layer
+
+**NATAN** (`/home/fabio/dev/NATAN`) è il **layer centrale di federazione** che gestisce:
+
+- **Aggregazioni P2P**: Gruppi di tenant che condividono dati (`aggregations`, `aggregation_members`)
+- **Connection Requests**: Workflow di invito/accettazione tra tenant (`connection_requests`)
+- **Communication Channels**: Canali di comunicazione inter-tenant (`CommunicationChannel`)
+- **API Federation**: Endpoint REST per gestione aggregazioni (`AggregationController`)
+
+**Relazione NATAN ↔ NATAN_LOC**:
+
+- NATAN_LOC consuma le API di federazione esposte da NATAN
+- `FederationService.php` in NATAN_LOC chiama `http://localhost:8003/api` (NATAN)
+- Le aggregazioni create in NATAN permettono la condivisione dati cross-tenant in NATAN_LOC
 
 ### Documentazione Correlata
 
-- **EGI-HUB**: `/home/fabio/EGI-HUB/README.md` - Architettura e stato dell'arte HUB
-- **EGI (FlorenceArtEGI)**: `/home/fabio/EGI/docs/EGI_STATO_DELLARTE.md` - Stato dell'arte FlorenceArtEGI
+- **NATAN**: `/home/fabio/dev/NATAN/README.md` - Federation Layer e Aggregazioni
+- **EGI-HUB**: `/home/fabio/dev/EGI-HUB/README.md` - Architettura e stato dell'arte HUB
+- **EGI (FlorenceArtEGI)**: `/home/fabio/dev/EGI/docs/EGI_STATO_DELLARTE.md` - Stato dell'arte FlorenceArtEGI
 - **NATAN_LOC**: Questo documento

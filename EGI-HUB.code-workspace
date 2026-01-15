@@ -11,6 +11,12 @@
 		},
 		{
 			"path": "../NATAN_LOC"
+		},
+		{
+			"path": "../EGI-HUB-HOME"
+		},
+		{
+			"path": "../EGI-INFO"
 		}
 	],
 	"settings": {
