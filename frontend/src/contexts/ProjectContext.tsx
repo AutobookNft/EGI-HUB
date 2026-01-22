@@ -12,7 +12,7 @@ import type { MyProject } from '../types/project';
 
 interface ProjectContextType {
   // Lista progetti accessibili
-  natan_loc COMprojects: MyProject[];
+  projects: MyProject[];
   loadingProjects: boolean;
   
   // Progetto correntemente selezionato
