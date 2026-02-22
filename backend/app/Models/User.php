@@ -67,7 +67,7 @@ class User extends Authenticatable
      */
     public function projectAdminRecords(): HasMany
     {
-        return $this->hasMany(ProjectAdmin::class);
+        return $this->hasMany(ProjectAdmin::class, 'user_id');
     }
 
     /**
@@ -75,7 +75,7 @@ class User extends Authenticatable
      */
     public function projects(): BelongsToMany
     {
-        return $this->belongsToMany(Project::class, 'project_admins')
+        return $this->belongsToMany(Project::class, 'project_admins', 'user_id', 'project_id')
                     ->withPivot(['role', 'permissions', 'is_active', 'expires_at'])
                     ->withTimestamps();
     }

@@ -104,7 +104,7 @@ class ProjectController extends Controller
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
-                'slug' => 'required|string|max:255|unique:projects,slug|alpha_dash',
+                'slug' => 'required|string|max:255|unique:system_projects,slug|alpha_dash',
                 'description' => 'nullable|string',
                 'url' => 'required|url',
                 'production_url' => 'nullable|url',
@@ -155,7 +155,7 @@ class ProjectController extends Controller
         try {
             $validated = $request->validate([
                 'name' => 'sometimes|string|max:255',
-                'slug' => ['sometimes', 'string', 'max:255', 'alpha_dash', Rule::unique('projects')->ignore($project->id)],
+                'slug' => ['sometimes', 'string', 'max:255', 'alpha_dash', Rule::unique('system_projects')->ignore($project->id)],
                 'description' => 'nullable|string',
                 'url' => 'sometimes|url',
                 'production_url' => 'nullable|url',

@@ -43,8 +43,9 @@ class Project extends Model
 
     /**
      * The table associated with the model.
+     * Maps to core.system_projects in the shared PostgreSQL database.
      */
-    protected $table = 'projects';
+    protected $table = 'system_projects';
 
     /**
      * Status constants
@@ -117,7 +118,7 @@ class Project extends Model
      */
     public function tenants(): HasMany
     {
-        return $this->hasMany(Tenant::class);
+        return $this->hasMany(Tenant::class, 'system_project_id');
     }
 
     /**
@@ -133,7 +134,7 @@ class Project extends Model
      */
     public function activities(): HasMany
     {
-        return $this->hasMany(ProjectActivity::class);
+        return $this->hasMany(ProjectActivity::class, 'project_id');
     }
 
     /**
@@ -141,7 +142,7 @@ class Project extends Model
      */
     public function adminRecords(): HasMany
     {
-        return $this->hasMany(ProjectAdmin::class);
+        return $this->hasMany(ProjectAdmin::class, 'project_id');
     }
 
     /**
@@ -149,7 +150,7 @@ class Project extends Model
      */
     public function admins(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'project_admins')
+        return $this->belongsToMany(User::class, 'project_admins', 'project_id', 'user_id')
                     ->withPivot(['role', 'permissions', 'is_active', 'expires_at'])
                     ->withTimestamps();
     }

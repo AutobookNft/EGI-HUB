@@ -1,156 +1,206 @@
-# 🚀 EGI-HUB Staging Deployment - Guida Completa
+# EGI-HUB - Guida Deploy AWS
 
-Questo documento riassume tutti i passaggi necessari per configurare e debuggare il deployment su staging.
+**Versione**: 2.0
+**Data**: 20 febbraio 2026
+**Infrastruttura**: AWS EC2 privata dietro ALB
 
 ---
 
-## 📊 Architettura Infrastruttura
+## Architettura
 
-```mermaid
-graph TB
-    subgraph "Laravel Forge - AWS"
-        STAGING["Server Staging<br/>13.53.205.215<br/>egi-hub.13.53.205.215.sslip.io"]
-        MARIADB["MariaDB Locale<br/>HUB_EGI"]
-    end
-    
-    subgraph "Laravel Forge - DigitalOcean"
-        PGSQL_SERVER["Server PostgreSQL<br/>157.245.20.197"]
-        PGSQL["PostgreSQL<br/>fegi_prod"]
-    end
-    
-    STAGING -->|"DB_CONNECTION=mariadb<br/>Dati locali HUB"| MARIADB
-    STAGING -->|"EGI_DB_CONNECTION=pgsql<br/>Utenti EGI-CORE"| PGSQL
-    
-    style STAGING fill:#4CAF50,color:white
-    style PGSQL fill:#336791,color:white
-    style MARIADB fill:#00758F,color:white
+```
+Internet → Route 53 (hub.florenceegi.com) → ALB (HTTPS:443) → EC2 privata (10.0.3.21)
+                                                                    │
+                                                          Nginx (vhost routing)
+                                                                    │
+                                                    ┌───────────────┼───────────────┐
+                                                    │                               │
+                                              frontend/dist/                 backend/public/
+                                              (React SPA)                    (Laravel API)
+                                                                                    │
+                                                                               PHP 8.3-FPM
+                                                                                    │
+                                                                            PostgreSQL (RDS)
 ```
 
 ---
 
-## 🔧 Dove Configurare Cosa
+## Risorse AWS
 
-### 1. Nginx Configuration (Forge)
-**Dove:** Forge → Site → Edit Nginx Configuration
+| Risorsa | Identificativo |
+|---------|---------------|
+| EC2 | `i-0940cdb7b955d1632` (florenceegi-private), t3.small, 10.0.3.21 |
+| ALB | florenceegi-alb |
+| Target Group | tg-florenceegi-prod-http-80 |
+| RDS | florenceegi-postgres-dev.c1i0048yu660.eu-north-1.rds.amazonaws.com |
+| S3 | florenceegi-media |
+| CloudFront | media.florenceegi.com |
+| DNS | hub.florenceegi.com → ALB (A Alias) |
 
-**Cosa controllare:**
-- I path devono corrispondere all'IP del server
-- Web Directory deve essere `/backend/public`
+---
+
+## Nginx Vhost
 
 ```nginx
-# Frontend React (SPA)
-location / {
-    root /home/forge/egi-hub.13.53.205.215.sslip.io/current/frontend/dist;
-    try_files $uri $uri/ /index.html;
+server {
+    listen 80;
+    server_name hub.florenceegi.com;
+
+    # Health check per ALB
+    location = /health {
+        access_log off;
+        return 200 'OK';
+        add_header Content-Type text/plain;
+    }
+
+    # API Laravel (backend)
+    location /api {
+        alias /home/forge/hub.florenceegi.com/backend/public;
+        try_files $uri $uri/ @api_handler;
+
+        location ~ \.php$ {
+            fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+            fastcgi_param SCRIPT_FILENAME $request_filename;
+            include fastcgi_params;
+        }
+    }
+
+    location @api_handler {
+        rewrite ^/api/(.*)$ /api/index.php?$query_string last;
+    }
+
+    # Frontend React SPA (catch-all)
+    location / {
+        root /home/forge/hub.florenceegi.com/frontend/dist;
+        try_files $uri $uri/ /index.html;
+    }
 }
-
-# Backend Laravel API
-location /api {
-    alias /home/forge/egi-hub.13.53.205.215.sslip.io/current/backend/public;
-    try_files $uri $uri/ @api;
-}
-```
-
-> [!IMPORTANT]  
-> Se cambi server/IP, devi aggiornare TUTTI i path nella config Nginx!
-
----
-
-### 2. Firewall PostgreSQL (Forge Network)
-**Dove:** Forge → Server `157.245.20.197` → Network
-
-**Cosa fare:**
-Aggiungere regola per ogni server che deve accedere al DB:
-
-| Port | Allow From | Descrizione |
-|------|------------|-------------|
-| 5432 | 13.53.205.215 | Staging server |
-| 5432 | (IP Produzione) | Production server |
-
----
-
-### 3. PostgreSQL Configuration (SSH)
-**Dove:** SSH al server `157.245.20.197`
-
-**File: `/etc/postgresql/*/main/postgresql.conf`**
-```conf
-listen_addresses = '*'
-```
-
-**File: `/etc/postgresql/*/main/pg_hba.conf`**
-```conf
-host    all    all    13.53.205.215/32    md5
-```
-
-**Comando per applicare:**
-```bash
-sudo systemctl restart postgresql
 ```
 
 ---
 
-### 4. Environment Variables (.env)
-**Dove:** Forge → Site → Environment
+## Variabili .env (backend)
 
-**Variabili critiche:**
 ```env
-# Database Locale (HUB)
-DB_CONNECTION=mariadb
-DB_HOST=localhost
-DB_DATABASE=HUB_EGI
+APP_NAME=EGI-HUB
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://hub.florenceegi.com
 
-# Database Esterno (EGI-CORE)
-EGI_DB_CONNECTION=pgsql
-EGI_DB_HOST=157.245.20.197
-EGI_DB_PORT=5432
-EGI_DB_DATABASE=fegi_prod
+DB_CONNECTION=pgsql
+DB_HOST=florenceegi-postgres-dev.c1i0048yu660.eu-north-1.rds.amazonaws.com
+DB_PORT=5432
+DB_DATABASE=florenceegi
+DB_USERNAME=<username>
+DB_PASSWORD=<password>
+DB_SEARCH_PATH=core,public
 
-# URL App
-APP_URL=https://egi-hub.13.53.205.215.sslip.io
+SESSION_DRIVER=database
+CACHE_STORE=database
+QUEUE_CONNECTION=database
+
+SANCTUM_STATEFUL_DOMAINS=hub.florenceegi.com
+SESSION_DOMAIN=.florenceegi.com
+
+FILESYSTEM_DISK=s3
+MEDIA_DISK=s3
+AWS_ACCESS_KEY_ID=<key>
+AWS_SECRET_ACCESS_KEY=<secret>
+AWS_DEFAULT_REGION=eu-north-1
+AWS_BUCKET=florenceegi-media
 ```
 
 ---
 
-## 🔍 Comandi Diagnostici Utili
+## Deploy Manuale
 
-### Test connessione PostgreSQL
+### Accesso al server
 ```bash
-# Dal server staging (13.53.205.215)
-nc -zv 157.245.20.197 5432
+# Via AWS SSM Session Manager (niente SSH)
+# AWS Console → Systems Manager → Session Manager → Start session → florenceegi-private
+# Poi: sudo -u forge bash
 ```
 
-### Verifica log errori Nginx
+### Primo deploy
 ```bash
-tail -f /var/log/nginx/2951917-error.log
+# 1. Clone (gia fatto)
+cd /home/forge/hub.florenceegi.com
+
+# 2. Backend
+cd backend
+cp .env.example .env
+# Editare .env con i valori di produzione
+composer install --no-dev --optimize-autoloader
+php artisan key:generate
+php artisan migrate --force
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan storage:link
+
+# 3. Permessi
+chmod -R 775 storage bootstrap/cache
+
+# 4. Frontend
+cd ../frontend
+npm install
+npm run build
+
+# 5. Restart PHP-FPM
+sudo systemctl restart php8.3-fpm
 ```
 
-### Verifica log Laravel
+### Deploy successivi
 ```bash
-tail -f /home/forge/.../storage/logs/laravel.log
-```
-
-### Test applicazione via CLI
-```bash
-php artisan tinker --execute="echo User::count();"
+sudo -u forge bash -c "cd /home/forge/hub.florenceegi.com && \
+    git pull origin main && \
+    cd backend && \
+    composer install --no-dev --optimize-autoloader && \
+    php artisan migrate --force && \
+    php artisan config:cache && \
+    php artisan route:cache && \
+    php artisan view:cache && \
+    cd ../frontend && \
+    npm install && \
+    npm run build"
+sudo systemctl restart php8.3-fpm
 ```
 
 ---
 
-## 🚨 Errori Comuni e Soluzioni
+## Verifica
 
-| Errore | Causa | Soluzione |
-|--------|-------|-----------|
-| `500 Internal Server Error` (Nginx loop) | Path sbagliati in Nginx config | Aggiornare IP nei path |
-| `ERR_NETWORK_CHANGED` | Timeout connessione DB | Aprire firewall + configurare pg_hba.conf |
-| `Connection refused` (port 5432) | PostgreSQL ascolta solo localhost | Modificare `listen_addresses = '*'` |
-| `Connection timed out` (port 5432) | Firewall blocca | Aggiungere regola in Forge Network |
+```bash
+# Health check (dal server)
+curl -H "Host: hub.florenceegi.com" http://localhost/health
+
+# API test
+curl -H "Host: hub.florenceegi.com" http://localhost/api/ecosystem
+
+# Da esterno (dopo DNS propagation)
+curl https://hub.florenceegi.com/health
+curl https://hub.florenceegi.com/api/ecosystem
+```
 
 ---
 
-## 📋 Checklist Nuovo Deployment
+## Troubleshooting
 
-- [ ] Verificare IP server in Nginx config
-- [ ] Firewall: porta 5432 aperta per nuovo IP
-- [ ] pg_hba.conf: aggiunta riga per nuovo IP
-- [ ] .env: verificare tutti gli URL e host
-- [ ] Deploy e test login
+| Problema | Causa | Soluzione |
+|----------|-------|-----------|
+| 502 Bad Gateway | PHP-FPM non running | `sudo systemctl restart php8.3-fpm` |
+| 404 su /api/* | Nginx non trova backend | Verificare path in vhost e `alias` directive |
+| React blank page | Build non eseguito | `cd frontend && npm run build` |
+| DB connection refused | Security group o .env | Verificare SG del RDS permette 10.0.3.21 |
+| `cd` fallisce in SSM | ssm-user permessi | Usare `sudo -u forge bash -c "cd ... && ..."` |
+| Composer memory | t3.small ha 2GB RAM | `php -d memory_limit=-1 /usr/local/bin/composer install` |
+| Permission denied su storage | www-data non accede | `chmod 755 /home/forge && chmod -R 775 storage` |
+
+---
+
+## Note
+
+- **Accesso admin**: Solo via SSM Session Manager (zero porte SSH aperte)
+- **Egress**: EC2 → NAT Gateway → Internet (per composer, npm, git, API esterne)
+- **Media**: S3 (florenceegi-media) serviti via CloudFront (media.florenceegi.com)
+- **Vecchia guida Forge/sslip.io**: Deprecata, sostituita da questo documento

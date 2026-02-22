@@ -26,7 +26,7 @@ class Tenant extends Model
     const STATUS_TRIAL = 'trial';
 
     protected $fillable = [
-        'project_id',
+        'system_project_id',
         'name',
         'slug',
         'description',
@@ -61,7 +61,7 @@ class Tenant extends Model
 
     public function project(): BelongsTo
     {
-        return $this->belongsTo(Project::class);
+        return $this->belongsTo(Project::class, 'system_project_id');
     }
 
     public function scopeActive($query)
@@ -81,7 +81,7 @@ class Tenant extends Model
 
     public function scopeForProject($query, int $projectId)
     {
-        return $query->where('project_id', $projectId);
+        return $query->where('system_project_id', $projectId);
     }
 
     public function isActive(): bool

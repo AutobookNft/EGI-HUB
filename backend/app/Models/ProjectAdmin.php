@@ -34,13 +34,6 @@ class ProjectAdmin extends Model
     use HasFactory;
 
     /**
-     * The connection name for the model.
-     *
-     * @var string|null
-     */
-    protected $connection = 'mariadb';
-
-    /**
      * The attributes that are mass assignable.
      */
     protected $fillable = [
