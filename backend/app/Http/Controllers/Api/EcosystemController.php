@@ -97,7 +97,7 @@ class EcosystemController extends Controller
                     'desc' => 'L\'applicazione principale per gestire gli EGI.',
                     'bullets' => ['Marketplace', 'Wallet', 'Assets'],
                     'egi_link' => 'Applicazione EGI.',
-                    'route' => 'https://egi.13.53.205.215.sslip.io',
+                    'route' => 'https://art.florenceegi.com',
                     'status' => 'active'
                 ],
                 // 2. NATAN-LOC
@@ -109,7 +109,7 @@ class EcosystemController extends Controller
                     'desc' => 'Servizi di localizzazione e assistenza AI.',
                     'bullets' => ['Localization', 'Assistance', 'AI Tools'],
                     'egi_link' => 'Intelligenza locale.',
-                    'route' => 'https://natan-loc.13.53.205.215.sslip.io',
+                    'route' => 'https://natan-loc.florenceegi.com',
                     'status' => 'active'
                 ],
                 // 3. EGI-INFO
@@ -121,7 +121,7 @@ class EcosystemController extends Controller
                     'desc' => 'Hub informativo e documentale.',
                     'bullets' => ['Docs', 'Guides', 'Wiki'],
                     'egi_link' => 'Informazione certificata.',
-                    'route' => 'https://egi-info.13.53.205.215.sslip.io',
+                    'route' => 'https://info.florenceegi.com',
                     'status' => 'active'
                 ],
                 // 4. EGI-PARTNER (Sidebar Only - but we render it for 4-point symmetry?)
@@ -218,7 +218,7 @@ class EcosystemController extends Controller
                 'desc' => 'Portal alla documentazione completa certificata.',
                 'bullets' => ['White papers', 'Technical docs', 'Version history'],
                 'egi_link' => 'Qui c\'è la verità completa.',
-                'route' => 'https://egi-info.13.53.205.215.sslip.io',
+                'route' => 'https://info.florenceegi.com',
                 'question' => 'Dove sono i dettagli?',
                 'status' => 'active'
             ],

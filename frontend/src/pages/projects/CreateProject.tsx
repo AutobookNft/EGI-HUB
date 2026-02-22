@@ -168,7 +168,7 @@ export default function CreateProject() {
                 </label>
                 <input
                   type="url"
-                  placeholder="https://natan-loc.13.48.57.194.sslip.io"
+                  placeholder="https://natan-loc.florenceegi.com"
                   className="input input-bordered"
                   value={formData.staging_url}
                   onChange={(e) => handleChange('staging_url', e.target.value)}
