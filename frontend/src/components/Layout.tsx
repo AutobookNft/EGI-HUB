@@ -36,7 +36,8 @@ import {
   Wrench,
   FolderOpen,
   ArrowLeft,
-  Home
+  Home,
+  Server
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useProject } from '../contexts/ProjectContext';
@@ -110,6 +111,7 @@ const globalMenuGroups: MenuGroup[] = [
     icon: <Wrench className="w-5 h-5" />,
     items: [
       { name: 'Configurazione Globale', path: '/system/config', icon: <Settings className="w-4 h-4" /> },
+      { name: 'Daemon', path: '/system/daemons', icon: <Server className="w-4 h-4" /> },
       { name: 'Domini & SSL', path: '/system/domains', icon: <Globe className="w-4 h-4" /> },
       { name: 'Sicurezza', path: '/system/security', icon: <Lock className="w-4 h-4" /> },
       { name: 'Notifiche', path: '/system/notifications', icon: <Bell className="w-4 h-4" /> },

@@ -49,6 +49,7 @@ import ProjectDashboard from './pages/projects/ProjectDashboard'
 
 // System Settings
 import SystemConfig from './pages/system/SystemConfig'
+import SystemDaemons from './pages/system/SystemDaemons'
 import SystemDomains from './pages/system/SystemDomains'
 import SystemSecurity from './pages/system/SystemSecurity'
 import SystemNotifications from './pages/system/SystemNotifications'
@@ -153,6 +154,7 @@ function AppRoutes() {
         
         {/* System Settings */}
         <Route path="system/config" element={<SystemConfig />} />
+        <Route path="system/daemons" element={<SystemDaemons />} />
         <Route path="system/domains" element={<SystemDomains />} />
         <Route path="system/security" element={<SystemSecurity />} />
         <Route path="system/notifications" element={<SystemNotifications />} />

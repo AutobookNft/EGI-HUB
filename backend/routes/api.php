@@ -48,6 +48,7 @@ use App\Http\Controllers\Api\Superadmin\PadminViolationsController;
 use App\Http\Controllers\Api\Superadmin\PadminSymbolsController;
 use App\Http\Controllers\Api\Superadmin\PadminSearchController;
 use App\Http\Controllers\Api\Superadmin\PadminStatisticsController;
+use App\Http\Controllers\Api\Superadmin\DaemonController;
 
 /*
 |--------------------------------------------------------------------------
@@ -192,6 +193,24 @@ Route::prefix('superadmin')->name('superadmin.')->group(function () {
         
         // Statistics
         Route::get('statistics', [PadminStatisticsController::class, 'index'])->name('statistics');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Daemon Management
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('daemons')->name('daemons.')->group(function () {
+        Route::get('/', [DaemonController::class, 'index'])->name('index');
+        Route::get('stats', [DaemonController::class, 'stats'])->name('stats');
+        Route::post('/', [DaemonController::class, 'store'])->name('store');
+        Route::get('{daemon}', [DaemonController::class, 'show'])->name('show');
+        Route::put('{daemon}', [DaemonController::class, 'update'])->name('update');
+        Route::delete('{daemon}', [DaemonController::class, 'destroy'])->name('destroy');
+        Route::post('{daemon}/start', [DaemonController::class, 'start'])->name('start');
+        Route::post('{daemon}/stop', [DaemonController::class, 'stop'])->name('stop');
+        Route::post('{daemon}/restart', [DaemonController::class, 'restart'])->name('restart');
+        Route::get('{daemon}/logs', [DaemonController::class, 'logs'])->name('logs');
     });
 });
 
