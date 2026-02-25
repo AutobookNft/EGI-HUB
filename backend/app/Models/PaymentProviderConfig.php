@@ -18,8 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Builder;
 
-class PaymentProviderConfig extends Model
-{
+class PaymentProviderConfig extends Model {
     use HasFactory, SoftDeletes;
 
     protected $table = 'payment_provider_configs';
@@ -46,25 +45,21 @@ class PaymentProviderConfig extends Model
 
     // ─── Relations ───────────────────────────────────────────────────────────
 
-    public function project(): BelongsTo
-    {
+    public function project(): BelongsTo {
         return $this->belongsTo(Project::class, 'project_id');
     }
 
     // ─── Scopes ──────────────────────────────────────────────────────────────
 
-    public function scopeEnabled(Builder $query): Builder
-    {
+    public function scopeEnabled(Builder $query): Builder {
         return $query->where('is_enabled', true);
     }
 
-    public function scopeForProject(Builder $query, int $projectId): Builder
-    {
+    public function scopeForProject(Builder $query, int $projectId): Builder {
         return $query->where('project_id', $projectId);
     }
 
-    public function scopeLive(Builder $query): Builder
-    {
+    public function scopeLive(Builder $query): Builder {
         return $query->where('environment', 'live');
     }
 
@@ -73,8 +68,7 @@ class PaymentProviderConfig extends Model
     /**
      * Restituisce la config decriptata — usare SOLO server-side, mai in API response.
      */
-    public function getDecryptedConfig(): ?array
-    {
+    public function getDecryptedConfig(): ?array {
         return $this->config;
     }
 
@@ -82,8 +76,7 @@ class PaymentProviderConfig extends Model
      * Ritorna la config mascherando i valori sensibili (per UI).
      * Mostra solo le chiavi presenti, con valori oscurati se non vuoti.
      */
-    public function getMaskedConfig(): array
-    {
+    public function getMaskedConfig(): array {
         $config = $this->config ?? [];
         $masked = [];
         foreach ($config as $key => $value) {
@@ -95,8 +88,7 @@ class PaymentProviderConfig extends Model
     /**
      * Schema chiavi attese per ogni provider.
      */
-    public static function configSchema(string $provider): array
-    {
+    public static function configSchema(string $provider): array {
         return match ($provider) {
             'stripe'  => ['publishable_key', 'secret_key', 'webhook_secret'],
             'paypal'  => ['client_id', 'client_secret', 'webhook_id'],

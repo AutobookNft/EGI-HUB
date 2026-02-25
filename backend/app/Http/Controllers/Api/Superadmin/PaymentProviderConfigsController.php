@@ -18,14 +18,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
-class PaymentProviderConfigsController extends Controller
-{
+class PaymentProviderConfigsController extends Controller {
     /**
      * GET /superadmin/billing/payment-providers
      * Lista tutte le config, raggruppate per progetto o filtrate.
      */
-    public function index(Request $request): JsonResponse
-    {
+    public function index(Request $request): JsonResponse {
         $query = PaymentProviderConfig::with('project:id,name,slug');
 
         if ($request->filled('project_id')) {
@@ -50,7 +48,7 @@ class PaymentProviderConfigsController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $configs->map(fn ($cfg) => array_merge(
+            'data'    => $configs->map(fn($cfg) => array_merge(
                 $cfg->toArray(),
                 [
                     'config_masked'  => $cfg->getMaskedConfig(),
@@ -65,8 +63,7 @@ class PaymentProviderConfigsController extends Controller
      * POST /superadmin/billing/payment-providers
      * Crea una nuova config provider per un progetto.
      */
-    public function store(Request $request): JsonResponse
-    {
+    public function store(Request $request): JsonResponse {
         $validated = $request->validate([
             'project_id'  => ['required', 'integer', 'exists:system_projects,id'],
             'provider'    => ['required', Rule::in(['stripe', 'paypal', 'crypto'])],
@@ -105,8 +102,7 @@ class PaymentProviderConfigsController extends Controller
      * PUT /superadmin/billing/payment-providers/{id}
      * Aggiorna config (inclusa la parte cifrata).
      */
-    public function update(Request $request, int $id): JsonResponse
-    {
+    public function update(Request $request, int $id): JsonResponse {
         $cfg = PaymentProviderConfig::findOrFail($id);
 
         $validated = $request->validate([
@@ -141,8 +137,7 @@ class PaymentProviderConfigsController extends Controller
     /**
      * DELETE /superadmin/billing/payment-providers/{id}
      */
-    public function destroy(int $id): JsonResponse
-    {
+    public function destroy(int $id): JsonResponse {
         $cfg = PaymentProviderConfig::findOrFail($id);
         $cfg->delete();
 
@@ -157,8 +152,7 @@ class PaymentProviderConfigsController extends Controller
      * Ritorna lo schema delle chiavi attese per un provider.
      * Usato dall'UI per generare il form dinamicamente.
      */
-    public function schema(string $provider): JsonResponse
-    {
+    public function schema(string $provider): JsonResponse {
         $allowed = ['stripe', 'paypal', 'crypto'];
         if (!in_array($provider, $allowed, true)) {
             return response()->json(['success' => false, 'message' => 'Provider non valido.'], 422);

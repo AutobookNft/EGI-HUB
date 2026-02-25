@@ -162,7 +162,7 @@ function RevenueTab({ months, group }: { months: number; group: Group }) {
               <BarChart data={ordersByPeriod} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis dataKey="period" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `€${v}`} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `€${v}`} />
                 <Tooltip formatter={(v: number) => [`€ ${fmt(v)}`, 'Revenue']} />
                 <Bar dataKey="revenue_eur" fill="#6366f1" name="Revenue €" radius={[3, 3, 0, 0]} />
               </BarChart>
