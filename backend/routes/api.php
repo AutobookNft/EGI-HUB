@@ -150,7 +150,10 @@ Route::prefix('superadmin')->name('superadmin.')->group(function () {
         
         // Feature Pricing
         Route::get('pricing', [FeaturePricingController::class, 'index'])->name('pricing.index');
+        Route::post('pricing', [FeaturePricingController::class, 'store'])->name('pricing.store');
+        Route::get('pricing/{id}', [FeaturePricingController::class, 'show'])->name('pricing.show');
         Route::put('pricing/{id}', [FeaturePricingController::class, 'update'])->name('pricing.update');
+        Route::delete('pricing/{id}', [FeaturePricingController::class, 'destroy'])->name('pricing.destroy');
         
         // Promotions
         Route::get('promotions', [PromotionsController::class, 'index'])->name('promotions.index');
