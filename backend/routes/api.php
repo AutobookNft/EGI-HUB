@@ -43,6 +43,7 @@ use App\Http\Controllers\Api\Superadmin\FeaturePricingController;
 use App\Http\Controllers\Api\Superadmin\PromotionsController;
 use App\Http\Controllers\Api\Superadmin\FeaturedCalendarController;
 use App\Http\Controllers\Api\Superadmin\ConsumptionLedgerController;
+use App\Http\Controllers\Api\Superadmin\PlatformSettingsController;
 use App\Http\Controllers\Api\Superadmin\PadminDashboardController;
 use App\Http\Controllers\Api\Superadmin\PadminViolationsController;
 use App\Http\Controllers\Api\Superadmin\PadminSymbolsController;
@@ -169,6 +170,11 @@ Route::prefix('superadmin')->name('superadmin.')->group(function () {
         // Consumption Ledger
         Route::get('consumption-ledger', [ConsumptionLedgerController::class, 'index'])->name('consumption-ledger.index');
         Route::get('consumption-ledger/export', [ConsumptionLedgerController::class, 'export'])->name('consumption-ledger.export');
+
+        // Platform Settings
+        Route::get('settings', [PlatformSettingsController::class, 'index'])->name('settings.index');
+        Route::put('settings/{id}', [PlatformSettingsController::class, 'update'])->name('settings.update');
+        Route::put('settings/group/{group}', [PlatformSettingsController::class, 'updateGroup'])->name('settings.updateGroup');
     });
 
     /*
