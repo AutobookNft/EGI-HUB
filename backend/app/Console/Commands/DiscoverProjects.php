@@ -148,6 +148,12 @@ class DiscoverProjects extends Command
                 continue;
             }
 
+            // Escludi record che iniziano con _ (validazione certificati, DKIM, ecc.)
+            if (str_starts_with($slug, '_')) {
+                $this->line("  ⤷ Skipping validation record: {$name}");
+                continue;
+            }
+
             // Escludi record tecnici
             if (in_array(strtolower($slug), $this->excludedSlugs, true)) {
                 $this->line("  ⤷ Skipping tecnico: {$name}");
