@@ -43,34 +43,31 @@ class DiscoverProjects extends Command
      * Nomi "leggibili" per slug noti.
      */
     private array $knownNames = [
-        'hub'   => 'EGI-HUB Dashboard',
-        'art'   => 'FlorenceEGI Art Marketplace',
-        'info'  => 'EGI-INFO (Sito Informativo)',
-        'natan' => 'NATAN PA (AI Cognitivo)',
-        'api'   => 'EGI API Gateway',
-        'www'   => 'FlorenceEGI Home',
-        'app'   => 'FlorenceEGI App',
+        'art'       => 'FlorenceEGI Art Marketplace',
+        'natan-loc' => 'NATAN PA (AI Cognitivo)',
+        'info'      => 'EGI-INFO (Sito Informativo)',
+        'api'       => 'EGI API Gateway',
+        'app'       => 'FlorenceEGI App',
     ];
 
     /**
-     * Record da escludere dall'upsert (tecnici/interni).
+     * Record da escludere dall'upsert (tecnici/infrastruttura/interni).
      */
     private array $excludedSlugs = [
-        'mail',
-        'smtp',
-        'pop',
-        'imap',
-        'ftp',
-        'sftp',
-        'vpn',
-        'ns1',
-        'ns2',
-        'ns3',
-        'ns4',
-        '_domainkey',
-        '_dmarc',
-        'autoconfig',
-        'autodiscover',
+        // Infrastruttura EGI-HUB stessa
+        'hub',
+        // CDN / asset
+        'media',
+        // Marketing/redirect
+        'www',
+        // Mail
+        'mail', 'smtp', 'pop', 'imap',
+        // Accesso remoto
+        'ftp', 'sftp', 'vpn',
+        // DNS tecnici
+        'ns1', 'ns2', 'ns3', 'ns4',
+        '_domainkey', '_dmarc',
+        'autoconfig', 'autodiscover',
     ];
 
     /**
@@ -226,7 +223,22 @@ class DiscoverProjects extends Command
             ];
         }
 
-        // ─── 4. Tabella riepilogo ──────────────────────────────────────────────
+        // ─── 4. Cleanup progetti stale ────────────────────────────────────────
+        // Rimuove progetti il cui URL punta a florenceegi.com ma che non
+        // fanno più parte dei sottodomini scoperti (es. slug rinominati).
+        if (!$dryRun) {
+            $discoveredSlugs = array_column($subdomains, 'slug');
+            $stale = Project::where('url', 'like', "%{$domain}%")
+                ->whereNotIn('slug', $discoveredSlugs)
+                ->get();
+
+            foreach ($stale as $staleProject) {
+                $this->line("  🗑️  Rimozione progetto stale: {$staleProject->slug} ({$staleProject->url})");
+                $staleProject->delete();
+            }
+        }
+
+        // ─── 5. Tabella riepilogo ──────────────────────────────────────────────
         $this->newLine();
         $this->table(
             ['Dominio', 'Tipo', 'Health', 'DB'],
