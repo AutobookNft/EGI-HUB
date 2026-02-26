@@ -305,6 +305,9 @@ Route::prefix('projects')->name('projects.')->group(function () {
     Route::get('{project}/health', [ProjectController::class, 'healthCheck'])->name('health');
     Route::post('health-check-all', [ProjectController::class, 'healthCheckAll'])->name('health-all');
 
+    // Route 53 auto-discovery
+    Route::post('discover', [ProjectController::class, 'discover'])->name('discover');
+
     // Service control (Start/Stop)
     Route::post('{project}/start', [ProjectController::class, 'start'])->name('start');
     Route::post('{project}/stop', [ProjectController::class, 'stop'])->name('stop');

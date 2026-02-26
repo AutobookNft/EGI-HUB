@@ -151,6 +151,22 @@ export async function getAggregatedData<T = unknown>(endpoint: string): Promise<
   return response.data.data;
 }
 
+/**
+ * Discover projects from Route 53 and upsert in the DB
+ */
+export async function discoverProjects(options?: {
+  dry_run?: boolean;
+  no_health?: boolean;
+}): Promise<{
+  success: boolean;
+  message: string;
+  output: string;
+  projects_count: number;
+}> {
+  const response = await api.post('/projects/discover', options ?? {});
+  return response.data;
+}
+
 export default {
   getProjects,
   getProject,
@@ -164,6 +180,7 @@ export default {
   stopProject,
   proxyToProject,
   getAggregatedData,
+  discoverProjects,
 };
 
 // Named export for component usage
@@ -178,6 +195,7 @@ export const projectApi = {
   checkAllHealth: checkAllProjectsHealth,
   start: startProject,
   stop: stopProject,
+  discover: discoverProjects,
 };
 
 // ==========================================

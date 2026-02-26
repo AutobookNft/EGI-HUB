@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FolderKanban, Plus, Search, Filter, MoreVertical, RefreshCw, CheckCircle, XCircle, Clock, AlertTriangle, Activity, ExternalLink, Play, Square, ArrowRight } from 'lucide-react';
-import { getProjects, getProjectStats, checkProjectHealth, startProject, stopProject } from '@/services/projectApi';
+import { FolderKanban, Plus, Search, Filter, MoreVertical, RefreshCw, CheckCircle, XCircle, Clock, AlertTriangle, Activity, ExternalLink, Play, Square, ArrowRight, ScanLine } from 'lucide-react';
+import { getProjects, getProjectStats, checkProjectHealth, startProject, stopProject, discoverProjects } from '@/services/projectApi';
 import { useProject } from '@/contexts/ProjectContext';
 import type { Project, ProjectStats } from '@/types/project';
 
@@ -21,6 +21,7 @@ export default function ProjectsList() {
   const [stats, setStats] = useState<ProjectStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [discovering, setDiscovering] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +75,21 @@ export default function ProjectsList() {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchData();
+  };
+
+  const handleDiscover = async () => {
+    if (!confirm('Avviare la discovery dei progetti da Route 53?\n\nIl sistema interrogherà i sottodomini di florenceegi.com e aggiornerà la lista.')) return;
+    setDiscovering(true);
+    try {
+      const result = await discoverProjects();
+      alert(`✅ ${result.message}\n\n${result.projects_count} progetti nel database.`);
+      await fetchData();
+    } catch (err) {
+      console.error('Discover failed:', err);
+      alert('❌ Errore durante la discovery. Controlla i log del server.');
+    } finally {
+      setDiscovering(false);
+    }
   };
 
   const handleHealthCheck = async (id: number) => {
@@ -176,6 +192,15 @@ export default function ProjectsList() {
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             Aggiorna
+          </button>
+          <button
+            className={`btn btn-outline btn-secondary gap-2 ${discovering ? 'loading' : ''}`}
+            onClick={handleDiscover}
+            disabled={discovering}
+            title="Scopre i progetti leggendo i sottodomini da AWS Route 53"
+          >
+            {!discovering && <ScanLine className="w-4 h-4" />}
+            {discovering ? 'Discovery...' : 'Scopri Progetti'}
           </button>
           <Link to="/projects/create" className="btn btn-primary gap-2">
             <Plus className="w-5 h-5" />

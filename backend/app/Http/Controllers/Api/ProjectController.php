@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Services\ProjectService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Validation\Rule;
 
 /**
@@ -278,5 +279,41 @@ class ProjectController extends Controller
             'message' => $result['message'],
             'data' => $result,
         ], $result['success'] ? 200 : 500);
+    }
+
+    /**
+     * Scopre i progetti leggendo i sottodomini da AWS Route 53 e fa upsert nel DB.
+     * Esegue il comando Artisan projects:discover in modo sincrono.
+     */
+    public function discover(Request $request): JsonResponse
+    {
+        $options = [];
+
+        if ($request->boolean('dry_run')) {
+            $options['--dry-run'] = true;
+        }
+
+        if ($request->boolean('no_health')) {
+            $options['--no-health'] = true;
+        }
+
+        try {
+            Artisan::call('projects:discover', $options);
+            $output = Artisan::output();
+
+            $projects = Project::all();
+
+            return response()->json([
+                'success'        => true,
+                'message'        => 'Discovery completata',
+                'output'         => $output,
+                'projects_count' => $projects->count(),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore durante la discovery: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }
