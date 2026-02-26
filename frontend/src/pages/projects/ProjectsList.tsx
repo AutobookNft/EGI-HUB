@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   FolderKanban, Plus, Search, Filter, MoreVertical, RefreshCw,
   CheckCircle, XCircle, Clock, AlertTriangle, Activity, ExternalLink,
-  Play, Square, ArrowRight, ScanLine
+  Play, Square, ArrowRight
 } from 'lucide-react';
 import { getProjects, getProjectStats, checkProjectHealth, checkAllProjectsHealth, startProject, stopProject, discoverProjects } from '@/services/projectApi';
 import { useProject } from '@/contexts/ProjectContext';
@@ -38,7 +38,6 @@ export default function ProjectsList() {
   const [stats, setStats] = useState<ProjectStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [discovering, setDiscovering] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -46,7 +45,7 @@ export default function ProjectsList() {
   const [confirm, setConfirm] = useState<ConfirmState>(DEFAULT_CONFIRM);
 
   useEffect(() => {
-    fetchData().then(() => runHealthCheckAll());
+    runDiscoverAndCheck();
   }, []);
 
   const fetchData = async () => {
@@ -67,44 +66,23 @@ export default function ProjectsList() {
     }
   };
 
-  const runHealthCheckAll = async () => {
+  const runDiscoverAndCheck = async () => {
+    try {
+      await discoverProjects();
+    } catch (err) {
+      console.error('Discovery failed (non-blocking):', err);
+    }
     try {
       await checkAllProjectsHealth();
-      await fetchData();
     } catch (err) {
-      console.error('Auto health check failed:', err);
+      console.error('Health check failed (non-blocking):', err);
     }
+    await fetchData();
   };
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchData().then(() => runHealthCheckAll());
-  };
-
-  const handleDiscover = () => {
-    setConfirm({
-      open: true,
-      title: 'Scopri progetti da Route 53',
-      message: 'Il sistema interrogherà i sottodomini di florenceegi.com su AWS Route 53 e aggiornerà la lista dei progetti con health check automatico.',
-      confirmLabel: 'Avvia discovery',
-      confirmClass: 'btn-secondary',
-      onConfirm: runDiscover,
-    });
-  };
-
-  const runDiscover = async () => {
-    setConfirm(DEFAULT_CONFIRM);
-    setDiscovering(true);
-    try {
-      const result = await discoverProjects();
-      success(`Discovery completata — ${result.projects_count} progetti nel database`);
-      await fetchData();
-    } catch (err) {
-      console.error('Discover failed:', err);
-      toastError('Errore durante la discovery. Controlla i log del server.');
-    } finally {
-      setDiscovering(false);
-    }
+    runDiscoverAndCheck();
   };
 
   const handleHealthCheck = async (id: number, name: string) => {
@@ -261,15 +239,6 @@ export default function ProjectsList() {
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             Aggiorna
-          </button>
-          <button
-            className="btn btn-outline btn-secondary gap-2"
-            onClick={handleDiscover}
-            disabled={discovering}
-            title="Legge i sottodomini da AWS Route 53 e aggiorna i progetti"
-          >
-            <ScanLine className="w-4 h-4" />
-            {discovering ? 'Discovery...' : 'Scopri Progetti'}
           </button>
           <Link to="/projects/create" className="btn btn-primary gap-2">
             <Plus className="w-5 h-5" />
@@ -466,10 +435,6 @@ export default function ProjectsList() {
             <p className="mt-4 text-base-content/60">Nessun progetto trovato</p>
             {projects.length === 0 && (
               <div className="flex gap-2 justify-center mt-4">
-                <button className="btn btn-secondary btn-sm gap-2" onClick={handleDiscover} disabled={discovering}>
-                  <ScanLine className="w-4 h-4" />
-                  Scopri da Route 53
-                </button>
                 <Link to="/projects/create" className="btn btn-primary btn-sm gap-2">
                   <Plus className="w-4 h-4" />
                   Aggiungi manualmente
