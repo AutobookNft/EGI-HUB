@@ -36,6 +36,7 @@
     ],
     "require": {
         "php": "^8.2",
+        "aws/aws-sdk-php": "^3.371",
         "florenceegi/hub": "@dev",
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.2",

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useToast } from '../contexts/ToastContext';
 import {
   LayoutDashboard,
   Brain,
@@ -167,6 +168,27 @@ const getProjectMenuGroups = (projectSlug: string): MenuGroup[] => [
     ],
   },
 ];
+
+const alertClass: Record<string, string> = {
+  success: 'alert-success',
+  error:   'alert-error',
+  warning: 'alert-warning',
+  info:    'alert-info',
+};
+
+function ToastContainer() {
+  const { toasts } = useToast();
+  if (!toasts.length) return null;
+  return (
+    <div className="toast toast-end toast-bottom z-[9999] fixed">
+      {toasts.map(t => (
+        <div key={t.id} className={`alert ${alertClass[t.type]} shadow-lg`}>
+          <span>{t.message}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function Layout() {
   const location = useLocation();
@@ -355,6 +377,9 @@ export default function Layout() {
           </div>
         </div>
       </aside>
+
+      {/* Toast Container */}
+      <ToastContainer />
 
       {/* Main Content */}
       <main className="min-h-screen transition-all duration-300 lg:ml-80">

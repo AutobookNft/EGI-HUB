@@ -19,22 +19,22 @@ use Illuminate\Validation\Rule;
  * NOTA: I "Projects" in EGI-HUB sono le applicazioni SaaS (NATAN_LOC, EGI, etc.)
  * mentre i "Tenants" sono i clienti finali di ogni progetto.
  */
+
 use Ultra\UltraLogManager\UltraLogManager;
 use Ultra\ErrorManager\Interfaces\ErrorManagerInterface;
 
-class ProjectController extends Controller
-{
+class ProjectController extends Controller {
     public function __construct(
         protected ProjectService $projectService,
         protected UltraLogManager $logger,
         protected ErrorManagerInterface $errorManager
-    ) {}
+    ) {
+    }
 
     /**
      * Lista tutti i progetti
      */
-    public function index(Request $request): mixed
-    {
+    public function index(Request $request): mixed {
         try {
             $this->logger->info('Fetching project list', [
                 'query_params' => $request->all(),
@@ -56,8 +56,8 @@ class ProjectController extends Controller
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('slug', 'like', "%{$search}%")
-                    ->orWhere('url', 'like', "%{$search}%");
+                        ->orWhere('slug', 'like', "%{$search}%")
+                        ->orWhere('url', 'like', "%{$search}%");
                 });
             }
 
@@ -77,7 +77,6 @@ class ProjectController extends Controller
                 'success' => true,
                 'data' => $projects,
             ]);
-
         } catch (\Exception $e) {
             return $this->errorManager->handle('PROJECT_LIST_ERROR', [
                 'user_id' => $request->user()?->id,
@@ -89,8 +88,7 @@ class ProjectController extends Controller
     /**
      * Mostra un singolo progetto
      */
-    public function show(Project $project): JsonResponse
-    {
+    public function show(Project $project): JsonResponse {
         return response()->json([
             'success' => true,
             'data' => $project,
@@ -100,8 +98,7 @@ class ProjectController extends Controller
     /**
      * Crea un nuovo progetto
      */
-    public function store(Request $request): mixed
-    {
+    public function store(Request $request): mixed {
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
@@ -139,7 +136,6 @@ class ProjectController extends Controller
                 'message' => 'Progetto creato con successo',
                 'data' => $project->fresh(),
             ], 201);
-
         } catch (\Exception $e) {
             return $this->errorManager->handle('PROJECT_CREATION_ERROR', [
                 'user_id' => $request->user()?->id,
@@ -151,8 +147,7 @@ class ProjectController extends Controller
     /**
      * Aggiorna un progetto esistente
      */
-    public function update(Request $request, Project $project): mixed
-    {
+    public function update(Request $request, Project $project): mixed {
         try {
             $validated = $request->validate([
                 'name' => 'sometimes|string|max:255',
@@ -193,8 +188,7 @@ class ProjectController extends Controller
     /**
      * Elimina un progetto (soft delete)
      */
-    public function destroy(Project $project): JsonResponse
-    {
+    public function destroy(Project $project): JsonResponse {
         $project->delete();
 
         return response()->json([
@@ -206,8 +200,7 @@ class ProjectController extends Controller
     /**
      * Verifica lo stato di salute di un progetto
      */
-    public function healthCheck(Project $project): JsonResponse
-    {
+    public function healthCheck(Project $project): JsonResponse {
         $result = $this->projectService->checkHealth($project);
 
         return response()->json([
@@ -222,8 +215,7 @@ class ProjectController extends Controller
     /**
      * Verifica lo stato di salute di tutti i progetti
      */
-    public function healthCheckAll(): JsonResponse
-    {
+    public function healthCheckAll(): JsonResponse {
         $results = $this->projectService->checkAllHealth();
 
         return response()->json([
@@ -235,8 +227,7 @@ class ProjectController extends Controller
     /**
      * Ottiene statistiche aggregate sui progetti
      */
-    public function stats(): JsonResponse
-    {
+    public function stats(): JsonResponse {
         $stats = [
             'total' => Project::count(),
             'active' => Project::where('status', 'active')->count(),
@@ -256,8 +247,7 @@ class ProjectController extends Controller
     /**
      * Avvia un progetto (esegue lo script start)
      */
-    public function start(Project $project): JsonResponse
-    {
+    public function start(Project $project): JsonResponse {
         $result = $this->projectService->startProject($project);
 
         return response()->json([
@@ -270,8 +260,7 @@ class ProjectController extends Controller
     /**
      * Ferma un progetto (esegue lo script stop)
      */
-    public function stop(Project $project): JsonResponse
-    {
+    public function stop(Project $project): JsonResponse {
         $result = $this->projectService->stopProject($project);
 
         return response()->json([
@@ -285,8 +274,7 @@ class ProjectController extends Controller
      * Scopre i progetti leggendo i sottodomini da AWS Route 53 e fa upsert nel DB.
      * Esegue il comando Artisan projects:discover in modo sincrono.
      */
-    public function discover(Request $request): JsonResponse
-    {
+    public function discover(Request $request): JsonResponse {
         $options = [];
 
         if ($request->boolean('dry_run')) {

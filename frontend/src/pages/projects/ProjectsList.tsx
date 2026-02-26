@@ -1,22 +1,39 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FolderKanban, Plus, Search, Filter, MoreVertical, RefreshCw, CheckCircle, XCircle, Clock, AlertTriangle, Activity, ExternalLink, Play, Square, ArrowRight, ScanLine } from 'lucide-react';
-import { getProjects, getProjectStats, checkProjectHealth, startProject, stopProject, discoverProjects } from '@/services/projectApi';
+import {
+  FolderKanban, Plus, Search, Filter, MoreVertical, RefreshCw,
+  CheckCircle, XCircle, Clock, AlertTriangle, Activity, ExternalLink,
+  Play, Square, ArrowRight, ScanLine
+} from 'lucide-react';
+import { getProjects, getProjectStats, checkProjectHealth, checkAllProjectsHealth, startProject, stopProject, discoverProjects } from '@/services/projectApi';
 import { useProject } from '@/contexts/ProjectContext';
+import { useToast } from '@/contexts/ToastContext';
+import ConfirmModal from '@/components/ConfirmModal';
 import type { Project, ProjectStats } from '@/types/project';
 
-/**
- * ProjectsList
- * 
- * Lista e gestione dei progetti SaaS nell'ecosistema EGI-HUB.
- * 
- * NOTE: I "Projects" in EGI-HUB sono le applicazioni SaaS (NATAN_LOC, EGI, etc.)
- * mentre i "Tenants" sono i clienti finali di ogni progetto.
- */
+interface ConfirmState {
+  open: boolean;
+  title: string;
+  message: string;
+  confirmLabel: string;
+  confirmClass: string;
+  onConfirm: () => void;
+}
+
+const DEFAULT_CONFIRM: ConfirmState = {
+  open: false,
+  title: '',
+  message: '',
+  confirmLabel: 'Conferma',
+  confirmClass: 'btn-primary',
+  onConfirm: () => {},
+};
+
 export default function ProjectsList() {
   const navigate = useNavigate();
   const { projects: myProjects, selectProject } = useProject();
-  
+  const { success, error: toastError } = useToast();
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [stats, setStats] = useState<ProjectStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,22 +41,151 @@ export default function ProjectsList() {
   const [discovering, setDiscovering] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [error, setError] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmState>(DEFAULT_CONFIRM);
 
   useEffect(() => {
-    fetchData();
+    fetchData().then(() => runHealthCheckAll());
   }, []);
 
-  // Funzione per entrare nel contesto di un progetto
+  const fetchData = async () => {
+    try {
+      setFetchError(null);
+      const [projectsData, statsData] = await Promise.all([
+        getProjects(),
+        getProjectStats(),
+      ]);
+      setProjects(projectsData);
+      setStats(statsData);
+    } catch (err) {
+      console.error('Error fetching projects:', err);
+      setFetchError('Errore nel caricamento dei progetti');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const runHealthCheckAll = async () => {
+    try {
+      await checkAllProjectsHealth();
+      await fetchData();
+    } catch (err) {
+      console.error('Auto health check failed:', err);
+    }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchData().then(() => runHealthCheckAll());
+  };
+
+  const handleDiscover = () => {
+    setConfirm({
+      open: true,
+      title: 'Scopri progetti da Route 53',
+      message: 'Il sistema interrogherà i sottodomini di florenceegi.com su AWS Route 53 e aggiornerà la lista dei progetti con health check automatico.',
+      confirmLabel: 'Avvia discovery',
+      confirmClass: 'btn-secondary',
+      onConfirm: runDiscover,
+    });
+  };
+
+  const runDiscover = async () => {
+    setConfirm(DEFAULT_CONFIRM);
+    setDiscovering(true);
+    try {
+      const result = await discoverProjects();
+      success(`Discovery completata — ${result.projects_count} progetti nel database`);
+      await fetchData();
+    } catch (err) {
+      console.error('Discover failed:', err);
+      toastError('Errore durante la discovery. Controlla i log del server.');
+    } finally {
+      setDiscovering(false);
+    }
+  };
+
+  const handleHealthCheck = async (id: number, name: string) => {
+    setActionLoading(id);
+    try {
+      await checkProjectHealth(id);
+      await fetchData();
+      success(`Health check completato per ${name}`);
+    } catch (err) {
+      console.error('Health check failed:', err);
+      toastError(`Health check fallito per ${name}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleStart = (id: number, name: string) => {
+    setConfirm({
+      open: true,
+      title: `Avvia ${name}`,
+      message: `Avviare i servizi di ${name}?`,
+      confirmLabel: 'Avvia',
+      confirmClass: 'btn-success',
+      onConfirm: () => runStart(id, name),
+    });
+  };
+
+  const runStart = async (id: number, name: string) => {
+    setConfirm(DEFAULT_CONFIRM);
+    setActionLoading(id);
+    try {
+      const result = await startProject(id);
+      if (result.success) {
+        success(result.message);
+      } else {
+        toastError(result.message);
+      }
+      await fetchData();
+    } catch (err) {
+      console.error('Start failed:', err);
+      toastError(`Errore avvio servizi di ${name}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleStop = (id: number, name: string) => {
+    setConfirm({
+      open: true,
+      title: `Ferma ${name}`,
+      message: `Fermare i servizi di ${name}?`,
+      confirmLabel: 'Ferma',
+      confirmClass: 'btn-error',
+      onConfirm: () => runStop(id, name),
+    });
+  };
+
+  const runStop = async (id: number, name: string) => {
+    setConfirm(DEFAULT_CONFIRM);
+    setActionLoading(id);
+    try {
+      const result = await stopProject(id);
+      if (result.success) {
+        success(result.message);
+      } else {
+        toastError(result.message);
+      }
+      await fetchData();
+    } catch (err) {
+      console.error('Stop failed:', err);
+      toastError(`Errore arresto servizi di ${name}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleEnterProject = (project: Project) => {
-    // Trova il progetto nella lista dei "miei progetti" per avere i dati di accesso
     const myProject = myProjects.find(p => p.slug === project.slug);
     if (myProject) {
       selectProject(myProject);
-      navigate(`/project/${project.slug}`);
     } else {
-      // Fallback: crea un oggetto MyProject base
       selectProject({
         id: project.id,
         name: project.name,
@@ -48,117 +194,29 @@ export default function ProjectsList() {
         url: project.url,
         status: project.status,
         is_healthy: project.is_healthy,
-        access: null
+        access: null,
       });
-      navigate(`/project/${project.slug}`);
     }
-  };
-
-  const fetchData = async () => {
-    try {
-      setError(null);
-      const [projectsData, statsData] = await Promise.all([
-        getProjects(),
-        getProjectStats()
-      ]);
-      setProjects(projectsData);
-      setStats(statsData);
-    } catch (err) {
-      console.error('Error fetching projects:', err);
-      setError('Errore nel caricamento dei progetti');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchData();
-  };
-
-  const handleDiscover = async () => {
-    if (!confirm('Avviare la discovery dei progetti da Route 53?\n\nIl sistema interrogherà i sottodomini di florenceegi.com e aggiornerà la lista.')) return;
-    setDiscovering(true);
-    try {
-      const result = await discoverProjects();
-      alert(`✅ ${result.message}\n\n${result.projects_count} progetti nel database.`);
-      await fetchData();
-    } catch (err) {
-      console.error('Discover failed:', err);
-      alert('❌ Errore durante la discovery. Controlla i log del server.');
-    } finally {
-      setDiscovering(false);
-    }
-  };
-
-  const handleHealthCheck = async (id: number) => {
-    try {
-      await checkProjectHealth(id);
-      await fetchData();
-    } catch (err) {
-      console.error('Health check failed:', err);
-    }
-  };
-
-  const handleStart = async (id: number, name: string) => {
-    if (!confirm(`Avviare i servizi di ${name}?`)) return;
-    
-    setActionLoading(id);
-    try {
-      const result = await startProject(id);
-      alert(result.message);
-      await fetchData();
-    } catch (err) {
-      console.error('Start failed:', err);
-      alert('Errore avvio servizi');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleStop = async (id: number, name: string) => {
-    if (!confirm(`Fermare i servizi di ${name}?`)) return;
-    
-    setActionLoading(id);
-    try {
-      const result = await stopProject(id);
-      alert(result.message);
-      await fetchData();
-    } catch (err) {
-      console.error('Stop failed:', err);
-      alert('Errore arresto servizi');
-    } finally {
-      setActionLoading(null);
-    }
+    navigate(`/project/${project.slug}`);
   };
 
   const getStatusBadge = (status: Project['status'], isHealthy: boolean) => {
-    if (status === 'active' && isHealthy) {
+    if (status === 'active' && isHealthy)
       return <span className="badge badge-success gap-1"><CheckCircle className="w-3 h-3" />Online</span>;
-    }
-    if (status === 'active' && !isHealthy) {
+    if (status === 'active' && !isHealthy)
       return <span className="badge badge-warning gap-1"><AlertTriangle className="w-3 h-3" />Degradato</span>;
-    }
-    if (status === 'error') {
+    if (status === 'error')
       return <span className="badge badge-error gap-1"><XCircle className="w-3 h-3" />Errore</span>;
-    }
-    if (status === 'maintenance') {
+    if (status === 'maintenance')
       return <span className="badge badge-info gap-1"><Clock className="w-3 h-3" />Manutenzione</span>;
-    }
     return <span className="badge badge-ghost gap-1"><Clock className="w-3 h-3" />Inattivo</span>;
   };
 
-  const getHealthIndicator = (isHealthy: boolean) => {
-    return isHealthy 
-      ? <span className="w-2 h-2 rounded-full bg-success animate-pulse"></span>
-      : <span className="w-2 h-2 rounded-full bg-error"></span>;
-  };
-
   const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          project.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          project.url.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch =
+      project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.url?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -173,6 +231,17 @@ export default function ProjectsList() {
 
   return (
     <div className="space-y-6">
+      {/* Confirm Modal */}
+      <ConfirmModal
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        confirmLabel={confirm.confirmLabel}
+        confirmClass={confirm.confirmClass}
+        onConfirm={confirm.onConfirm}
+        onCancel={() => setConfirm(DEFAULT_CONFIRM)}
+      />
+
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -181,12 +250,12 @@ export default function ProjectsList() {
             Gestione Progetti SaaS
           </h1>
           <p className="text-base-content/60 mt-1">
-            {projects.length} progetti registrati • {stats?.healthy || 0} online • {stats?.unhealthy || 0} offline
+            {projects.length} progetti registrati &bull; {stats?.healthy || 0} online &bull; {stats?.unhealthy || 0} offline
           </p>
         </div>
-        <div className="flex gap-2">
-          <button 
-            className={`btn btn-ghost gap-2 ${refreshing ? 'loading' : ''}`}
+        <div className="flex flex-wrap gap-2">
+          <button
+            className="btn btn-ghost gap-2"
             onClick={handleRefresh}
             disabled={refreshing}
           >
@@ -194,12 +263,12 @@ export default function ProjectsList() {
             Aggiorna
           </button>
           <button
-            className={`btn btn-outline btn-secondary gap-2 ${discovering ? 'loading' : ''}`}
+            className="btn btn-outline btn-secondary gap-2"
             onClick={handleDiscover}
             disabled={discovering}
-            title="Scopre i progetti leggendo i sottodomini da AWS Route 53"
+            title="Legge i sottodomini da AWS Route 53 e aggiorna i progetti"
           >
-            {!discovering && <ScanLine className="w-4 h-4" />}
+            <ScanLine className="w-4 h-4" />
             {discovering ? 'Discovery...' : 'Scopri Progetti'}
           </button>
           <Link to="/projects/create" className="btn btn-primary gap-2">
@@ -210,10 +279,10 @@ export default function ProjectsList() {
       </div>
 
       {/* Error Alert */}
-      {error && (
+      {fetchError && (
         <div className="alert alert-error">
           <AlertTriangle className="w-5 h-5" />
-          <span>{error}</span>
+          <span>{fetchError}</span>
         </div>
       )}
 
@@ -251,7 +320,7 @@ export default function ProjectsList() {
                   placeholder="Cerca progetto per nome, slug o URL..."
                   className="input input-bordered w-full pl-10"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                 />
               </div>
             </div>
@@ -259,7 +328,7 @@ export default function ProjectsList() {
               <select
                 className="select select-bordered"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={e => setStatusFilter(e.target.value)}
               >
                 <option value="all">Tutti gli stati</option>
                 <option value="active">Attivi</option>
@@ -292,14 +361,12 @@ export default function ProjectsList() {
               </tr>
             </thead>
             <tbody>
-              {filteredProjects.map((project) => (
+              {filteredProjects.map(project => (
                 <tr key={project.id} className="hover">
                   <td>
                     <div className="flex items-center gap-3">
-                      <div className="avatar placeholder">
-                        <div className={`rounded-lg w-10 h-10 flex items-center justify-center ${project.is_healthy ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}`}>
-                          <FolderKanban className="w-5 h-5" />
-                        </div>
+                      <div className={`rounded-lg w-10 h-10 flex items-center justify-center ${project.is_healthy ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}`}>
+                        <FolderKanban className="w-5 h-5" />
                       </div>
                       <div>
                         <div className="font-bold">{project.name}</div>
@@ -308,20 +375,26 @@ export default function ProjectsList() {
                     </div>
                   </td>
                   <td>
-                    <a 
-                      href={project.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="link link-hover flex items-center gap-1 text-sm"
-                    >
-                      {project.url}
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+                    {project.url ? (
+                      <a
+                        href={project.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="link link-hover flex items-center gap-1 text-sm"
+                      >
+                        {project.url}
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    ) : (
+                      <span className="text-base-content/30 text-sm">—</span>
+                    )}
                   </td>
                   <td>{getStatusBadge(project.status, project.is_healthy)}</td>
                   <td>
                     <div className="flex items-center gap-2">
-                      {getHealthIndicator(project.is_healthy)}
+                      {project.is_healthy
+                        ? <span className="w-2 h-2 rounded-full bg-success animate-pulse"></span>
+                        : <span className="w-2 h-2 rounded-full bg-error"></span>}
                       <span className={project.is_healthy ? 'text-success' : 'text-error'}>
                         {project.is_healthy ? 'Online' : 'Offline'}
                       </span>
@@ -330,26 +403,24 @@ export default function ProjectsList() {
                   <td>
                     <div className="flex items-center gap-2 text-sm text-base-content/60">
                       <Activity className="w-4 h-4" />
-                      {project.last_health_check 
+                      {project.last_health_check
                         ? new Date(project.last_health_check).toLocaleString('it-IT')
                         : 'Mai verificato'}
                     </div>
                   </td>
                   <td>
                     <div className="flex gap-1">
-                      <button 
+                      <button
                         className="btn btn-ghost btn-xs btn-square"
                         onClick={() => handleStart(project.id, project.name)}
                         disabled={actionLoading === project.id}
                         title="Avvia servizi"
                       >
-                        {actionLoading === project.id ? (
-                          <span className="loading loading-spinner loading-xs"></span>
-                        ) : (
-                          <Play className="w-4 h-4 text-success" />
-                        )}
+                        {actionLoading === project.id
+                          ? <span className="loading loading-spinner loading-xs"></span>
+                          : <Play className="w-4 h-4 text-success" />}
                       </button>
-                      <button 
+                      <button
                         className="btn btn-ghost btn-xs btn-square"
                         onClick={() => handleStop(project.id, project.name)}
                         disabled={actionLoading === project.id}
@@ -361,27 +432,24 @@ export default function ProjectsList() {
                   </td>
                   <td>
                     <div className="flex items-center gap-2">
-                      {/* Entra nel progetto */}
                       <button
                         onClick={() => handleEnterProject(project)}
                         className="btn btn-primary btn-sm gap-1"
-                        title="Entra nel progetto"
                       >
                         <ArrowRight className="w-4 h-4" />
                         Entra
                       </button>
-                      
-                      {/* Menu azioni */}
                       <div className="dropdown dropdown-end">
                         <label tabIndex={0} className="btn btn-ghost btn-sm btn-square">
                           <MoreVertical className="w-4 h-4" />
                         </label>
                         <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
                           <li><Link to={`/projects/${project.id}`}>Visualizza Dettagli</Link></li>
-                          <li><a onClick={() => handleHealthCheck(project.id)}>Verifica Health</a></li>
-                          <li><a href={project.url} target="_blank" rel="noopener noreferrer">Apri Progetto</a></li>
+                          <li><a onClick={() => handleHealthCheck(project.id, project.name)}>Verifica Health</a></li>
+                          {project.url && (
+                            <li><a href={project.url} target="_blank" rel="noopener noreferrer">Apri Progetto</a></li>
+                          )}
                           <li><Link to={`/projects/${project.id}/edit`}>Modifica</Link></li>
-                          <li className="text-error"><a>Elimina Progetto</a></li>
                         </ul>
                       </div>
                     </div>
@@ -392,15 +460,21 @@ export default function ProjectsList() {
           </table>
         </div>
 
-        {filteredProjects.length === 0 && (
+        {filteredProjects.length === 0 && !loading && (
           <div className="text-center py-12">
             <FolderKanban className="w-12 h-12 mx-auto text-base-content/20" />
             <p className="mt-4 text-base-content/60">Nessun progetto trovato</p>
             {projects.length === 0 && (
-              <Link to="/projects/create" className="btn btn-primary btn-sm mt-4">
-                <Plus className="w-4 h-4" />
-                Aggiungi il primo progetto
-              </Link>
+              <div className="flex gap-2 justify-center mt-4">
+                <button className="btn btn-secondary btn-sm gap-2" onClick={handleDiscover} disabled={discovering}>
+                  <ScanLine className="w-4 h-4" />
+                  Scopri da Route 53
+                </button>
+                <Link to="/projects/create" className="btn btn-primary btn-sm gap-2">
+                  <Plus className="w-4 h-4" />
+                  Aggiungi manualmente
+                </Link>
+              </div>
             )}
           </div>
         )}

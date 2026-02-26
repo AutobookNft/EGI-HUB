@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard'
 import ComingSoon from './pages/ComingSoon'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ProjectProvider } from './contexts/ProjectContext'
+import { ToastProvider } from './contexts/ToastContext'
 
 // Auth Pages
 import Login from './pages/auth/Login'
@@ -205,11 +206,13 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <ProjectProvider>
-        <AppRoutes />
-      </ProjectProvider>
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <ProjectProvider>
+          <AppRoutes />
+        </ProjectProvider>
+      </AuthProvider>
+    </ToastProvider>
   );
 }
 

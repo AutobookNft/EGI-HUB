@@ -8,11 +8,11 @@
  */
 
 import api from './api';
-import type { 
-  Project, 
-  ProjectStats, 
+import type {
+  Project,
+  ProjectStats,
   ProjectHealthCheck,
-  CreateProjectData, 
+  CreateProjectData,
   UpdateProjectData,
   ApiResponse,
   ProjectWithHealth,
@@ -128,14 +128,14 @@ export async function proxyToProject<T = unknown>(
   data?: unknown
 ): Promise<T> {
   const url = `/proxy/${projectSlug}/${path}`;
-  
+
   const response = await api.request<ApiResponse<T>>({
     method,
     url,
     data: method !== 'GET' ? data : undefined,
     params: method === 'GET' ? data : undefined,
   });
-  
+
   return response.data.data;
 }
 
