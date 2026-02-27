@@ -65,11 +65,15 @@ class AiFeaturePricing extends Model
         'last_purchased_at',
         'metadata',
         'admin_notes',
+        'ai_tokens_included',
+        'ai_tokens_bonus_percentage',
     ];
 
     protected $casts = [
         'cost_fiat_eur'          => 'decimal:2',
-        'cost_egili'             => 'integer',
+        'cost_egili'                   => 'integer',
+        'ai_tokens_included'          => 'integer',
+        'ai_tokens_bonus_percentage'  => 'integer',
         'is_free'                => 'boolean',
         'free_monthly_limit'     => 'integer',
         'tier_pricing'           => 'array',

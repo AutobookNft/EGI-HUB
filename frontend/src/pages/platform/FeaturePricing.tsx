@@ -22,6 +22,8 @@ interface AiFeaturePricing {
   display_order: number;
   total_purchases: number;
   admin_notes: string | null;
+  ai_tokens_included: number | null;
+  ai_tokens_bonus_percentage: number;
 }
 
 interface ApiResponse {
@@ -60,9 +62,11 @@ export default function FeaturePricing() {
 
   // Edit inline
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editValues, setEditValues] = useState<{ cost_egili: string; cost_fiat_eur: string }>({
+  const [editValues, setEditValues] = useState<{ cost_egili: string; cost_fiat_eur: string; ai_tokens_included: string; ai_tokens_bonus_percentage: string }>({
     cost_egili: '',
     cost_fiat_eur: '',
+    ai_tokens_included: '',
+    ai_tokens_bonus_percentage: '0',
   });
 
   // === QUERY ===
@@ -86,8 +90,8 @@ export default function FeaturePricing() {
 
   // === MUTATION: update prezzi ===
   const updateMutation = useMutation({
-    mutationFn: ({ id, cost_egili, cost_fiat_eur }: { id: number; cost_egili: number; cost_fiat_eur: number | null }) =>
-      api.put('/superadmin/platform/pricing/' + id, { cost_egili, cost_fiat_eur }),
+    mutationFn: ({ id, cost_egili, cost_fiat_eur, ai_tokens_included, ai_tokens_bonus_percentage }: { id: number; cost_egili: number; cost_fiat_eur: number | null; ai_tokens_included: number | null; ai_tokens_bonus_percentage: number }) =>
+      api.put('/superadmin/platform/pricing/' + id, { cost_egili, cost_fiat_eur, ai_tokens_included, ai_tokens_bonus_percentage }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platform-pricing'] });
       setEditingId(null);
@@ -106,6 +110,8 @@ export default function FeaturePricing() {
     setEditValues({
       cost_egili: String(item.cost_egili ?? 0),
       cost_fiat_eur: item.cost_fiat_eur ?? '',
+      ai_tokens_included: item.ai_tokens_included != null ? String(item.ai_tokens_included) : '',
+      ai_tokens_bonus_percentage: String(item.ai_tokens_bonus_percentage ?? 0),
     });
   };
 
@@ -114,8 +120,11 @@ export default function FeaturePricing() {
   const saveEdit = (id: number) => {
     const egili = parseInt(editValues.cost_egili, 10);
     const eur = editValues.cost_fiat_eur !== '' ? parseFloat(editValues.cost_fiat_eur) : null;
+    const tokens = editValues.ai_tokens_included !== '' ? parseInt(editValues.ai_tokens_included, 10) : null;
+    const bonus = parseInt(editValues.ai_tokens_bonus_percentage, 10);
     if (isNaN(egili) || egili < 0) return;
-    updateMutation.mutate({ id, cost_egili: egili, cost_fiat_eur: eur });
+    if (tokens !== null && isNaN(tokens)) return;
+    updateMutation.mutate({ id, cost_egili: egili, cost_fiat_eur: eur, ai_tokens_included: tokens, ai_tokens_bonus_percentage: isNaN(bonus) ? 0 : bonus });
   };
 
   const handleDelete = (item: AiFeaturePricing) => {
@@ -200,15 +209,17 @@ export default function FeaturePricing() {
       </div>
 
       {/* Tabella */}
-      <div className="card bg-base-100 shadow-xl">
-        <div className="card-body p-0">
+      <div className="shadow-xl card bg-base-100">
+        <div className="p-0 card-body">
           <div className="overflow-x-auto">
             <table className="table table-zebra">
               <thead>
                 <tr>
                   <th>Feature</th>
                   <th>Categoria</th>
-                  <th>Egili</th>
+                  <th>AI Token</th>
+                  <th>Bonus %</th>
+                  <th>Egili costo</th>
                   <th>EUR</th>
                   <th>Attivo</th>
                   <th>Acquisti</th>
@@ -226,7 +237,7 @@ export default function FeaturePricing() {
                         <div className="text-xs text-base-content/50 mt-0.5">{item.feature_description}</div>
                       )}
                       {item.bundle_type && (
-                        <span className="badge badge-outline badge-xs mt-1">{labelBundle(item.bundle_type)}</span>
+                        <span className="mt-1 badge badge-outline badge-xs">{labelBundle(item.bundle_type)}</span>
                       )}
                     </td>
 
@@ -235,13 +246,55 @@ export default function FeaturePricing() {
                       <span className="badge badge-ghost badge-sm">{labelCategory(item.feature_category)}</span>
                     </td>
 
-                    {/* Egili — edit inline */}
+                    {/* AI Token inclusi — edit inline */}
                     <td>
                       {editingId === item.id ? (
                         <input
                           type="number"
                           min="0"
-                          className="input input-bordered input-xs w-24"
+                          className="w-28 input input-bordered input-xs"
+                          value={editValues.ai_tokens_included}
+                          placeholder="—"
+                          onChange={e => setEditValues(v => ({ ...v, ai_tokens_included: e.target.value }))}
+                        />
+                      ) : (
+                        item.ai_tokens_included != null ? (
+                          <span className="font-semibold text-blue-500">
+                            {item.ai_tokens_included.toLocaleString('it-IT')}
+                          </span>
+                        ) : (
+                          <span className="badge badge-warning badge-xs">Da conf.</span>
+                        )
+                      )}
+                    </td>
+
+                    {/* Bonus % — edit inline */}
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          className="w-16 input input-bordered input-xs"
+                          value={editValues.ai_tokens_bonus_percentage}
+                          onChange={e => setEditValues(v => ({ ...v, ai_tokens_bonus_percentage: e.target.value }))}
+                        />
+                      ) : (
+                        item.ai_tokens_bonus_percentage > 0 ? (
+                          <span className="text-green-500 font-semibold">+{item.ai_tokens_bonus_percentage}%</span>
+                        ) : (
+                          <span className="text-base-content/30">—</span>
+                        )
+                      )}
+                    </td>
+
+                    {/* Egili costo — edit inline */}
+                    <td>
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          min="0"
+                          className="w-24 input input-bordered input-xs"
                           value={editValues.cost_egili}
                           onChange={e => setEditValues(v => ({ ...v, cost_egili: e.target.value }))}
                         />
@@ -259,7 +312,7 @@ export default function FeaturePricing() {
                           type="number"
                           min="0"
                           step="0.01"
-                          className="input input-bordered input-xs w-24"
+                          className="w-24 input input-bordered input-xs"
                           value={editValues.cost_fiat_eur}
                           placeholder="—"
                           onChange={e => setEditValues(v => ({ ...v, cost_fiat_eur: e.target.value }))}
@@ -274,7 +327,7 @@ export default function FeaturePricing() {
                     {/* Toggle is_active inline */}
                     <td>
                       <button
-                        className="btn btn-ghost btn-xs gap-1"
+                        className="gap-1 btn btn-ghost btn-xs"
                         disabled={toggleMutation.isPending}
                         onClick={() => toggleMutation.mutate({ id: item.id, is_active: !item.is_active })}
                         title={item.is_active ? 'Disattiva' : 'Attiva'}
@@ -295,7 +348,7 @@ export default function FeaturePricing() {
                     {/* Azioni */}
                     <td className="text-right">
                       {editingId === item.id ? (
-                        <div className="flex gap-1 justify-end">
+                        <div className="flex justify-end gap-1">
                           <button
                             className="btn btn-success btn-xs"
                             disabled={updateMutation.isPending}
@@ -308,7 +361,7 @@ export default function FeaturePricing() {
                           </button>
                         </div>
                       ) : (
-                        <div className="flex gap-1 justify-end">
+                        <div className="flex justify-end gap-1">
                           <button
                             className="btn btn-ghost btn-xs"
                             onClick={() => startEdit(item)}
@@ -331,8 +384,8 @@ export default function FeaturePricing() {
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={7} className="text-center py-12">
-                      <DollarSign className="w-12 h-12 mx-auto text-base-content/30 mb-4" />
+                    <td colSpan={7} className="py-12 text-center">
+                      <DollarSign className="w-12 h-12 mx-auto mb-4 text-base-content/30" />
                       <p className="text-base-content/60">Nessuna feature trovata con i filtri selezionati</p>
                     </td>
                   </tr>

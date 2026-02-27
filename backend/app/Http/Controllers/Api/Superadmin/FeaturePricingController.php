@@ -156,8 +156,10 @@ class FeaturePricingController extends Controller
             'free_monthly_limit'  => 'sometimes|nullable|integer|min:0',
             'icon_name'           => 'sometimes|nullable|string|max:100',
             'badge_color'         => 'sometimes|nullable|string|max:50',
-            'admin_notes'         => 'sometimes|nullable|string',
-        ]);
+            'admin_notes'                   => 'sometimes|nullable|string',
+            'ai_tokens_included'            => 'sometimes|nullable|integer|min:0',
+            'ai_tokens_bonus_percentage'    => 'sometimes|integer|min:0|max:100',
+        });
 
         try {
             $item = AiFeaturePricing::findOrFail($id);
