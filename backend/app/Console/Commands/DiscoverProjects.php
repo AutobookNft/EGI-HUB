@@ -43,11 +43,12 @@ class DiscoverProjects extends Command
      * Nomi "leggibili" per slug noti.
      */
     private array $knownNames = [
-        'art'       => 'FlorenceEGI Art Marketplace',
-        'natan-loc' => 'NATAN PA (AI Cognitivo)',
-        'info'      => 'EGI-INFO (Sito Informativo)',
-        'api'       => 'EGI API Gateway',
-        'app'       => 'FlorenceEGI App',
+        'florenceegi' => 'FlorenceEGI (Sito Principale)',
+        'art'         => 'FlorenceEGI Art Marketplace',
+        'natan-loc'   => 'NATAN PA (AI Cognitivo)',
+        'info'        => 'EGI-INFO (Sito Informativo)',
+        'api'         => 'EGI API Gateway',
+        'app'         => 'FlorenceEGI App',
     ];
 
     /**
@@ -130,8 +131,16 @@ class DiscoverProjects extends Command
                 continue;
             }
 
-            // Deve essere un sottodominio di florenceegi.com (non l'apex)
+            // Dominio apex (es. florenceegi.com) → slug = 'florenceegi'
             if ($name === $domain) {
+                $subdomains[] = [
+                    'slug'           => 'florenceegi',
+                    'name'           => $this->knownNames['florenceegi'],
+                    'production_url' => "https://{$domain}",
+                    'url'            => "https://{$domain}",
+                    'dns_type'       => $type,
+                    'dns_name'       => $name,
+                ];
                 continue;
             }
 
