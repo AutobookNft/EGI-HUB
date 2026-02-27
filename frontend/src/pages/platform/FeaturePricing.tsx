@@ -222,9 +222,11 @@ export default function FeaturePricing() {
                     {/* Feature */}
                     <td>
                       <div className="font-semibold">{item.feature_name}</div>
-                      <code className="text-xs bg-base-200 px-1.5 py-0.5 rounded">{item.feature_code}</code>
+                      {item.feature_description && (
+                        <div className="text-xs text-base-content/50 mt-0.5">{item.feature_description}</div>
+                      )}
                       {item.bundle_type && (
-                        <span className="badge badge-outline badge-xs ml-2">{labelBundle(item.bundle_type)}</span>
+                        <span className="badge badge-outline badge-xs mt-1">{labelBundle(item.bundle_type)}</span>
                       )}
                     </td>
 
