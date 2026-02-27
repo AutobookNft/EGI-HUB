@@ -64,11 +64,11 @@ export default function Equilibrium() {
       </div>
 
       {/* Main Balance Card */}
-      <div className="card bg-gradient-to-br from-purple-500/20 to-blue-500/20 shadow-xl">
+      <div className="card bg-gradient-to-br from-purple/20 to-info/20 shadow-xl">
         <div className="card-body items-center text-center">
-          <Scale className="w-16 h-16 text-purple-500 mb-4" />
+          <Scale className="w-16 h-16 text-purple mb-4" />
           <h2 className="card-title text-3xl">Indice di Equilibrio</h2>
-          <div className="text-6xl font-bold text-purple-600">
+          <div className="text-6xl font-bold text-purple">
             {data?.stats.balance_index?.toFixed(2) ?? '0.00'}
           </div>
           <div className="flex items-center gap-2 mt-2">

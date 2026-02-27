@@ -159,15 +159,15 @@ export default function Dashboard() {
       {/* Stats Cards - Replica esatta di EGI dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* AI Consultations */}
-        <div className="card bg-gradient-to-br from-purple-500/10 to-purple-600/10 shadow-xl">
+        <div className="card bg-gradient-to-br from-purple/10 to-purple/15 shadow-xl">
           <div className="card-body">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-base-content/60">AI Consultazioni</p>
-                <p className="text-3xl font-bold text-purple-600">{data?.stats.ai_consultations ?? 0}</p>
+                <p className="text-3xl font-bold text-purple">{data?.stats.ai_consultations ?? 0}</p>
               </div>
-              <div className="rounded-full bg-purple-500/20 p-3">
-                <Brain className="w-8 h-8 text-purple-500" />
+              <div className="rounded-full bg-purple/20 p-3">
+                <Brain className="w-8 h-8 text-purple" />
               </div>
             </div>
           </div>
