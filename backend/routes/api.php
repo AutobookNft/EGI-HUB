@@ -315,6 +315,9 @@ Route::prefix('projects')->name('projects.')->group(function () {
     // Remote command execution via AWS SSM
     Route::post('{project}/remote-command', [ProjectController::class, 'remoteCommand'])->name('remote-command');
 
+    // Stack detection (artisan/composer/npm) — cached in metadata for 1h
+    Route::post('{project}/detect-stack', [ProjectController::class, 'detectStack'])->name('detect-stack');
+
     // Project activities
     Route::get('{project}/activities', [ProjectActivityController::class, 'forProject'])->name('activities');
 

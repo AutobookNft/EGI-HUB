@@ -3,6 +3,7 @@
  *
  * Main dashboard for a Project Admin after entering a specific project.
  * Shows project stats, tenant management, quick actions, and remote deploy commands.
+ * Commands are filtered based on the detected tech stack (artisan/composer/npm).
  */
 
 import { useState, useEffect } from 'react';
@@ -29,8 +30,9 @@ import {
   RefreshCcw,
   Rocket,
   Play,
+  Layers,
 } from 'lucide-react';
-import { getProjects, checkProjectHealth, runRemoteCommand } from '../../services/projectApi';
+import { getProjects, checkProjectHealth, runRemoteCommand, detectProjectStack } from '../../services/projectApi';
 import { useToast } from '../../contexts/ToastContext';
 import type { Project } from '../../types/project';
 
@@ -42,23 +44,33 @@ interface DashboardCard {
   link?: string;
 }
 
+interface ProjectStack {
+  has_artisan: boolean;
+  has_composer: boolean;
+  has_npm: boolean;
+}
+
+type StackRequirement = 'artisan' | 'composer' | 'npm';
+
 interface PredefinedCommand {
   key: string;
   label: string;
   icon: React.ReactNode;
   variant: string;
+  /** Se vuoto, il comando è sempre visibile */
+  requires: StackRequirement[];
 }
 
 const PREDEFINED_COMMANDS: PredefinedCommand[] = [
-  { key: 'git_pull',         label: 'Git Pull',         icon: <GitPullRequest className="w-4 h-4" />, variant: 'btn-ghost' },
-  { key: 'composer_install', label: 'Composer Install', icon: <Package className="w-4 h-4" />,        variant: 'btn-ghost' },
-  { key: 'npm_install',      label: 'NPM Install',      icon: <Package2 className="w-4 h-4" />,       variant: 'btn-ghost' },
-  { key: 'npm_build',        label: 'NPM Build',        icon: <Hammer className="w-4 h-4" />,         variant: 'btn-ghost' },
-  { key: 'cache_clear',      label: 'Cache Clear',      icon: <Trash2 className="w-4 h-4" />,         variant: 'btn-ghost' },
-  { key: 'config_cache',     label: 'Config Cache',     icon: <Settings2 className="w-4 h-4" />,      variant: 'btn-ghost' },
-  { key: 'migrate',          label: 'DB Migrate',       icon: <Database className="w-4 h-4" />,       variant: 'btn-ghost' },
-  { key: 'queue_restart',    label: 'Queue Restart',    icon: <RefreshCcw className="w-4 h-4" />,     variant: 'btn-ghost' },
-  { key: 'deploy_full',      label: 'Deploy Completo',  icon: <Rocket className="w-4 h-4" />,         variant: 'btn-primary' },
+  { key: 'git_pull',         label: 'Git Pull',         icon: <GitPullRequest className="w-4 h-4" />, variant: 'btn-ghost',   requires: [] },
+  { key: 'composer_install', label: 'Composer Install', icon: <Package className="w-4 h-4" />,        variant: 'btn-ghost',   requires: ['composer'] },
+  { key: 'npm_install',      label: 'NPM Install',      icon: <Package2 className="w-4 h-4" />,       variant: 'btn-ghost',   requires: ['npm'] },
+  { key: 'npm_build',        label: 'NPM Build',        icon: <Hammer className="w-4 h-4" />,         variant: 'btn-ghost',   requires: ['npm'] },
+  { key: 'cache_clear',      label: 'Cache Clear',      icon: <Trash2 className="w-4 h-4" />,         variant: 'btn-ghost',   requires: ['artisan'] },
+  { key: 'config_cache',     label: 'Config Cache',     icon: <Settings2 className="w-4 h-4" />,      variant: 'btn-ghost',   requires: ['artisan'] },
+  { key: 'migrate',          label: 'DB Migrate',       icon: <Database className="w-4 h-4" />,       variant: 'btn-ghost',   requires: ['artisan'] },
+  { key: 'queue_restart',    label: 'Queue Restart',    icon: <RefreshCcw className="w-4 h-4" />,     variant: 'btn-ghost',   requires: ['artisan'] },
+  { key: 'deploy_full',      label: 'Deploy Completo',  icon: <Rocket className="w-4 h-4" />,         variant: 'btn-primary', requires: [] },
 ];
 
 export default function ProjectDashboard() {
@@ -69,6 +81,10 @@ export default function ProjectDashboard() {
   const [loading, setLoading] = useState(true);
   const [healthLoading, setHealthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Stack detection
+  const [stack, setStack] = useState<ProjectStack | null>(null);
+  const [stackLoading, setStackLoading] = useState(false);
 
   // Deploy state
   const [cmdLoading, setCmdLoading] = useState(false);
@@ -92,6 +108,18 @@ export default function ProjectDashboard() {
       if (found) {
         setProject(found);
         setError(null);
+
+        // Usa stack da metadata se disponibile e recente (< 1h)
+        const cachedStack = (found.metadata as Record<string, unknown>)?.stack as ProjectStack | undefined;
+        const cachedAt = (found.metadata as Record<string, unknown>)?.stack_detected_at as string | undefined;
+        const isFresh = cachedAt && (Date.now() - new Date(cachedAt).getTime()) < 3600_000;
+
+        if (cachedStack && isFresh) {
+          setStack(cachedStack);
+        } else {
+          // Rileva stack in background
+          loadStack(found.id);
+        }
       } else {
         setError('Progetto non trovato');
       }
@@ -103,9 +131,21 @@ export default function ProjectDashboard() {
     }
   };
 
+  const loadStack = async (projectId: number) => {
+    setStackLoading(true);
+    try {
+      const detected = await detectProjectStack(projectId);
+      setStack(detected);
+    } catch {
+      // Se fallisce, mostriamo tutti i comandi (fallback permissivo)
+      setStack({ has_artisan: true, has_composer: true, has_npm: true });
+    } finally {
+      setStackLoading(false);
+    }
+  };
+
   const refreshHealth = async () => {
     if (!project) return;
-
     try {
       setHealthLoading(true);
       const response = await checkProjectHealth(project.id);
@@ -156,6 +196,13 @@ export default function ProjectDashboard() {
     }
   };
 
+  /** Comandi visibili in base allo stack rilevato */
+  const visibleCommands = PREDEFINED_COMMANDS.filter(cmd => {
+    if (!cmd.requires.length) return true;
+    if (!stack) return true; // mostra tutto mentre rileva
+    return cmd.requires.every(req => stack[`has_${req}` as keyof ProjectStack]);
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -177,35 +224,20 @@ export default function ProjectDashboard() {
   }
 
   const dashboardCards: DashboardCard[] = [
-    {
-      title: 'Tenant Attivi',
-      value: '—',
-      icon: <Users className="w-8 h-8" />,
-      color: 'text-primary',
-      link: `/projects/${slug}/tenants`,
-    },
-    {
-      title: 'Utenti Totali',
-      value: '—',
-      icon: <Users className="w-8 h-8" />,
-      color: 'text-secondary',
-      link: `/projects/${slug}/users`,
-    },
-    {
-      title: 'API Calls (24h)',
-      value: '—',
-      icon: <BarChart3 className="w-8 h-8" />,
-      color: 'text-accent',
-      link: `/projects/${slug}/analytics`,
-    },
-    {
-      title: 'Logs',
-      value: 'Vedi',
-      icon: <FileText className="w-8 h-8" />,
-      color: 'text-info',
-      link: `/projects/${slug}/logs`,
-    },
+    { title: 'Tenant Attivi',  value: '—', icon: <Users className="w-8 h-8" />,    color: 'text-primary',   link: `/projects/${slug}/tenants` },
+    { title: 'Utenti Totali',  value: '—', icon: <Users className="w-8 h-8" />,    color: 'text-secondary', link: `/projects/${slug}/users` },
+    { title: 'API Calls (24h)',value: '—', icon: <BarChart3 className="w-8 h-8" />, color: 'text-accent',   link: `/projects/${slug}/analytics` },
+    { title: 'Logs',           value: 'Vedi', icon: <FileText className="w-8 h-8" />, color: 'text-info',   link: `/projects/${slug}/logs` },
   ];
+
+  /** Badge stack rilevato */
+  const stackBadges = stack ? (
+    <div className="flex flex-wrap gap-1 mt-1">
+      {stack.has_artisan  && <span className="badge badge-sm badge-outline">Laravel/Artisan</span>}
+      {stack.has_composer && <span className="badge badge-sm badge-outline">Composer</span>}
+      {stack.has_npm      && <span className="badge badge-sm badge-outline">Node/NPM</span>}
+    </div>
+  ) : null;
 
   return (
     <div className="space-y-6">
@@ -237,11 +269,9 @@ export default function ProjectDashboard() {
               <div className={`badge ${project.is_healthy ? 'badge-success' : 'badge-error'} gap-1 badge-lg`}>
                 {project.is_healthy
                   ? <CheckCircle className="w-4 h-4" />
-                  : <AlertCircle className="w-4 h-4" />
-                }
+                  : <AlertCircle className="w-4 h-4" />}
                 {project.is_healthy ? 'Online' : 'Offline'}
               </div>
-
               <button
                 className={`btn btn-sm btn-ghost ${healthLoading ? 'loading' : ''}`}
                 onClick={refreshHealth}
@@ -256,7 +286,6 @@ export default function ProjectDashboard() {
           {project.description && (
             <p className="mt-4 text-base-content/70">{project.description}</p>
           )}
-
           {project.last_health_check && (
             <p className="text-xs text-base-content/50 mt-2">
               Ultimo controllo: {new Date(project.last_health_check).toLocaleString()}
@@ -279,9 +308,7 @@ export default function ProjectDashboard() {
                   <p className="text-base-content/60 text-sm">{card.title}</p>
                   <p className="text-2xl font-bold mt-1">{card.value}</p>
                 </div>
-                <div className={card.color}>
-                  {card.icon}
-                </div>
+                <div className={card.color}>{card.icon}</div>
               </div>
             </div>
           </Link>
@@ -290,74 +317,39 @@ export default function ProjectDashboard() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Tenant Management Card */}
         <div className="card bg-base-100 shadow-lg">
           <div className="card-body">
-            <h2 className="card-title">
-              <Users className="w-5 h-5" />
-              Gestione Tenant
-            </h2>
-            <p className="text-base-content/70">
-              Gestisci i tenant (clienti) di questo progetto.
-            </p>
+            <h2 className="card-title"><Users className="w-5 h-5" />Gestione Tenant</h2>
+            <p className="text-base-content/70">Gestisci i tenant (clienti) di questo progetto.</p>
             <div className="card-actions justify-end mt-4">
-              <Link to={`/projects/${slug}/tenants`} className="btn btn-primary btn-sm">
-                Vai ai Tenant
-              </Link>
+              <Link to={`/projects/${slug}/tenants`} className="btn btn-primary btn-sm">Vai ai Tenant</Link>
             </div>
           </div>
         </div>
-
-        {/* Settings Card */}
         <div className="card bg-base-100 shadow-lg">
           <div className="card-body">
-            <h2 className="card-title">
-              <Settings className="w-5 h-5" />
-              Configurazione
-            </h2>
-            <p className="text-base-content/70">
-              Modifica le impostazioni e configurazioni del progetto.
-            </p>
+            <h2 className="card-title"><Settings className="w-5 h-5" />Configurazione</h2>
+            <p className="text-base-content/70">Modifica le impostazioni e configurazioni del progetto.</p>
             <div className="card-actions justify-end mt-4">
-              <Link to={`/projects/${slug}/settings`} className="btn btn-outline btn-sm">
-                Impostazioni
-              </Link>
+              <Link to={`/projects/${slug}/settings`} className="btn btn-outline btn-sm">Impostazioni</Link>
             </div>
           </div>
         </div>
-
-        {/* Admins Card */}
         <div className="card bg-base-100 shadow-lg">
           <div className="card-body">
-            <h2 className="card-title">
-              <ShieldCheck className="w-5 h-5" />
-              Project Admins
-            </h2>
-            <p className="text-base-content/70">
-              Gestisci chi ha accesso a questo progetto e con quali permessi.
-            </p>
+            <h2 className="card-title"><ShieldCheck className="w-5 h-5" />Project Admins</h2>
+            <p className="text-base-content/70">Gestisci chi ha accesso a questo progetto e con quali permessi.</p>
             <div className="card-actions justify-end mt-4">
-              <Link to={`/projects/${slug}/admins`} className="btn btn-outline btn-sm">
-                Gestisci Admins
-              </Link>
+              <Link to={`/projects/${slug}/admins`} className="btn btn-outline btn-sm">Gestisci Admins</Link>
             </div>
           </div>
         </div>
-
-        {/* Analytics Card */}
         <div className="card bg-base-100 shadow-lg">
           <div className="card-body">
-            <h2 className="card-title">
-              <BarChart3 className="w-5 h-5" />
-              Analytics
-            </h2>
-            <p className="text-base-content/70">
-              Visualizza statistiche e metriche del progetto.
-            </p>
+            <h2 className="card-title"><BarChart3 className="w-5 h-5" />Analytics</h2>
+            <p className="text-base-content/70">Visualizza statistiche e metriche del progetto.</p>
             <div className="card-actions justify-end mt-4">
-              <Link to={`/projects/${slug}/analytics`} className="btn btn-outline btn-sm">
-                Vedi Analytics
-              </Link>
+              <Link to={`/projects/${slug}/analytics`} className="btn btn-outline btn-sm">Vedi Analytics</Link>
             </div>
           </div>
         </div>
@@ -366,22 +358,45 @@ export default function ProjectDashboard() {
       {/* Deploy & Remote Commands */}
       <div className="card bg-base-100 shadow-lg">
         <div className="card-body">
-          <h2 className="card-title">
-            <Terminal className="w-5 h-5" />
-            Deploy &amp; Comandi Remoti
-          </h2>
-          <p className="text-base-content/70 text-sm">
-            Esegui comandi sull'EC2 nella directory del progetto ({project.slug}).
-          </p>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="card-title">
+                <Terminal className="w-5 h-5" />
+                Deploy &amp; Comandi Remoti
+              </h2>
+              <p className="text-base-content/70 text-sm mt-1">
+                Esegui comandi sull'EC2 nella directory del progetto.
+              </p>
+              {/* Stack badges */}
+              {stackLoading && (
+                <div className="flex items-center gap-2 mt-1 text-xs text-base-content/50">
+                  <span className="loading loading-spinner loading-xs"></span>
+                  Rilevamento stack…
+                </div>
+              )}
+              {!stackLoading && stackBadges}
+            </div>
+            {/* Refresh stack button */}
+            {stack && !stackLoading && (
+              <button
+                className="btn btn-ghost btn-xs gap-1"
+                onClick={() => project && loadStack(project.id)}
+                title="Ririleva stack"
+              >
+                <Layers className="w-3 h-3" />
+                Ririleva stack
+              </button>
+            )}
+          </div>
 
           {/* Predefined command buttons */}
           <div className="flex flex-wrap gap-2 mt-4">
-            {PREDEFINED_COMMANDS.map(cmd => (
+            {visibleCommands.map(cmd => (
               <button
                 key={cmd.key}
                 className={`btn btn-sm gap-1 ${cmd.variant}`}
                 onClick={() => handleCommand(cmd.key)}
-                disabled={cmdLoading}
+                disabled={cmdLoading || stackLoading}
               >
                 {cmdLoading && cmdLabel === cmd.label
                   ? <span className="loading loading-spinner loading-xs"></span>
@@ -402,7 +417,7 @@ export default function ProjectDashboard() {
                 <input
                   type="text"
                   className="input input-bordered w-full pl-7 font-mono text-sm"
-                  placeholder="es. php artisan tinker --execute='echo 1;'"
+                  placeholder="es. php artisan tinker"
                   value={customCommand}
                   onChange={e => setCustomCommand(e.target.value)}
                   onKeyDown={e => {
@@ -426,7 +441,7 @@ export default function ProjectDashboard() {
             </div>
           </div>
 
-          {/* Output box */}
+          {/* Loading indicator */}
           {cmdLoading && (
             <div className="mt-4 flex items-center gap-3 text-base-content/60 text-sm">
               <span className="loading loading-spinner loading-sm"></span>
@@ -434,6 +449,7 @@ export default function ProjectDashboard() {
             </div>
           )}
 
+          {/* Output box */}
           {!cmdLoading && cmdOutput !== null && (
             <div className="mt-4">
               <div className="flex items-center gap-2 mb-1">

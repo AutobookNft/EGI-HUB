@@ -311,6 +311,32 @@ class ProjectController extends Controller {
     }
 
     /**
+     * Rileva lo stack tecnologico di un progetto (artisan/composer/npm)
+     * tramite SSM e salva il risultato in metadata['stack'].
+     * Se la cache metadata è recente (< 1 ora), la usa senza chiamare SSM.
+     */
+    public function detectStack(Project $project): JsonResponse
+    {
+        // Usa cache se recente
+        $cached = $project->metadata['stack'] ?? null;
+        $cachedAt = $project->metadata['stack_detected_at'] ?? null;
+
+        if ($cached && $cachedAt && now()->diffInMinutes($cachedAt) < 60) {
+            return response()->json(['success' => true, 'data' => $cached, 'cached' => true]);
+        }
+
+        $service = app(RemoteCommandService::class);
+        $stack   = $service->detectStack($project);
+
+        $meta = $project->metadata ?? [];
+        $meta['stack']             = $stack;
+        $meta['stack_detected_at'] = now()->toISOString();
+        $project->update(['metadata' => $meta]);
+
+        return response()->json(['success' => true, 'data' => $stack, 'cached' => false]);
+    }
+
+    /**
      * Scopre i progetti leggendo i sottodomini da AWS Route 53 e fa upsert nel DB.
      * Esegue il comando Artisan projects:discover in modo sincrono.
      */

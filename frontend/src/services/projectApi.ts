@@ -152,6 +152,21 @@ export async function getAggregatedData<T = unknown>(endpoint: string): Promise<
 }
 
 /**
+ * Detect the tech stack of a project (artisan/composer/npm) via SSM.
+ * Result is cached in project metadata for 1 hour.
+ */
+export async function detectProjectStack(id: number): Promise<{
+  has_artisan: boolean;
+  has_composer: boolean;
+  has_npm: boolean;
+}> {
+  const response = await api.post<{ success: boolean; data: { has_artisan: boolean; has_composer: boolean; has_npm: boolean } }>(
+    `/projects/${id}/detect-stack`
+  );
+  return response.data.data;
+}
+
+/**
  * Run a remote command on the project's EC2 instance via AWS SSM
  */
 export async function runRemoteCommand(

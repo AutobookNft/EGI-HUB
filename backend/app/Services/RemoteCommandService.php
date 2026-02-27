@@ -96,6 +96,32 @@ class RemoteCommandService
     }
 
     /**
+     * Rileva lo stack tecnologico del progetto (artisan, composer, npm)
+     * controllando la presenza dei file caratteristici nella deploy_path.
+     *
+     * @return array{has_artisan: bool, has_composer: bool, has_npm: bool}
+     */
+    public function detectStack(Project $project): array
+    {
+        $check = 'files=""; [ -f artisan ] && files="${files}artisan,"; [ -f composer.json ] && files="${files}composer,"; [ -f package.json ] && files="${files}npm,"; echo "${files%,}"';
+
+        $result = $this->run($project, $check);
+
+        // Se SSM fallisce del tutto, restituiamo default permissivi
+        if (!$result['success'] && empty(trim($result['output']))) {
+            return ['has_artisan' => true, 'has_composer' => true, 'has_npm' => true];
+        }
+
+        $detected = array_filter(explode(',', trim($result['output'])));
+
+        return [
+            'has_artisan'  => in_array('artisan',  $detected, true),
+            'has_composer' => in_array('composer', $detected, true),
+            'has_npm'      => in_array('npm',      $detected, true),
+        ];
+    }
+
+    /**
      * Esegue il polling su SSM GetCommandInvocation fino a completamento.
      */
     private function pollResult(string $commandId, string $instanceId, int $maxAttempts, int $waitSec): array
