@@ -235,7 +235,7 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen bg-base-200">
+    <div className="min-h-screen bg-slate-50">
       {/* Mobile menu button */}
       <div className="lg:hidden fixed top-4 left-4 z-50">
         <button
@@ -250,8 +250,8 @@ export default function Layout() {
       <aside
         className={`
           fixed top-0 left-0 z-40 h-screen w-80
-          bg-gradient-to-b from-[#0B1F3A] to-[#123C7A]
-          text-neutral-content
+          bg-slate-900 border-r border-slate-800
+          text-white
           transform transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0
@@ -259,19 +259,19 @@ export default function Layout() {
       >
         <div className="flex flex-col h-full">
           {/* Logo & Context */}
-          <div className="p-6 text-center border-b border-white/10">
+          <div className="p-6 text-center border-b border-slate-800">
             {currentProject ? (
               <>
                 {/* Project Context Header */}
                 <button
                   onClick={handleExitProject}
-                  className="flex items-center gap-2 text-white/70 hover:text-white text-sm mb-2 mx-auto"
+                  className="flex items-center gap-2 text-slate-400 hover:text-white text-sm mb-2 mx-auto transition-colors"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   <span>Torna a EGI-HUB</span>
                 </button>
                 <h1 className="text-xl font-bold text-white truncate">{currentProject.name}</h1>
-                <span className="inline-block px-3 py-1 mt-2 text-xs font-semibold rounded-full bg-primary/20 text-primary-content">
+                <span className="inline-block px-3 py-1 mt-2 text-xs font-semibold rounded-full bg-blue-600 text-white">
                   {currentProject.access?.role_label || 'Project'}
                 </span>
               </>
@@ -279,7 +279,7 @@ export default function Layout() {
               <>
                 {/* Global Context Header */}
                 <h1 className="text-2xl font-bold text-white">EGI-HUB</h1>
-                <span className="inline-block px-3 py-1 mt-2 text-xs font-semibold rounded-full bg-white/10 text-white/90">
+                <span className="inline-block px-3 py-1 mt-2 text-xs font-semibold rounded-full bg-slate-800 text-slate-300">
                   {isSuperAdmin ? 'Super Admin' : 'Admin'}
                 </span>
               </>
@@ -301,21 +301,21 @@ export default function Layout() {
                       w-full flex items-center justify-between px-3 py-3 rounded-lg
                       transition-colors duration-150
                       ${groupActive 
-                        ? 'bg-primary text-primary-content shadow-sm' 
-                        : 'hover:bg-white/10'
+                        ? 'bg-blue-600 text-white shadow-sm' 
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                       }
                     `}
                   >
                     <div className="flex items-center gap-3">
-                      <span className={groupActive ? '' : 'opacity-60'}>
+                      <span>
                         {group.icon}
                       </span>
                       <span className="font-medium">{group.name}</span>
                     </div>
                     {isOpen ? (
-                      <ChevronDown className="w-4 h-4 opacity-60" />
+                      <ChevronDown className="w-4 h-4" />
                     ) : (
-                      <ChevronRight className="w-4 h-4 opacity-60" />
+                      <ChevronRight className="w-4 h-4" />
                     )}
                   </button>
 
@@ -331,8 +331,8 @@ export default function Layout() {
                             flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
                             transition-colors duration-150
                             ${isActive(item.path)
-                              ? 'bg-primary/80 text-primary-content font-semibold shadow-sm'
-                              : 'hover:bg-white/10 opacity-80 hover:opacity-100'
+                              ? 'bg-blue-600 text-white font-semibold shadow-sm'
+                              : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                             }
                           `}
                         >
