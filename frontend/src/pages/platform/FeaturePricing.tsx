@@ -30,6 +30,24 @@ interface ApiResponse {
   total: number;
 }
 
+// === LABEL MAPS ===
+
+const CATEGORY_LABELS: Record<string, string> = {
+  ai_services: 'Servizi AI',
+  platform_services: 'Servizi Piattaforma',
+  premium_visibility: 'Visibilità Premium',
+  governance: 'Governance',
+};
+
+const BUNDLE_LABELS: Record<string, string> = {
+  credit_package: 'Pacchetto Crediti',
+  subscription: 'Abbonamento',
+  one_time: 'Singolo Acquisto',
+};
+
+const labelCategory = (key: string) => CATEGORY_LABELS[key] ?? key;
+const labelBundle = (key: string) => BUNDLE_LABELS[key] ?? key;
+
 // === COMPONENT ===
 
 export default function FeaturePricing() {
@@ -149,7 +167,7 @@ export default function FeaturePricing() {
           onChange={e => setFilterCategory(e.target.value)}
         >
           <option value="">Tutte le categorie</option>
-          {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          {categories.map(c => <option key={c} value={c}>{labelCategory(c)}</option>)}
         </select>
 
         <select
@@ -158,7 +176,7 @@ export default function FeaturePricing() {
           onChange={e => setFilterBundleType(e.target.value)}
         >
           <option value="">Tutti i bundle</option>
-          {bundleTypes.map(b => <option key={b} value={b}>{b}</option>)}
+          {bundleTypes.map(b => <option key={b} value={b}>{labelBundle(b)}</option>)}
         </select>
 
         <select
@@ -206,13 +224,13 @@ export default function FeaturePricing() {
                       <div className="font-semibold">{item.feature_name}</div>
                       <code className="text-xs bg-base-200 px-1.5 py-0.5 rounded">{item.feature_code}</code>
                       {item.bundle_type && (
-                        <span className="badge badge-outline badge-xs ml-2">{item.bundle_type}</span>
+                        <span className="badge badge-outline badge-xs ml-2">{labelBundle(item.bundle_type)}</span>
                       )}
                     </td>
 
                     {/* Categoria */}
                     <td>
-                      <span className="badge badge-ghost badge-sm">{item.feature_category}</span>
+                      <span className="badge badge-ghost badge-sm">{labelCategory(item.feature_category)}</span>
                     </td>
 
                     {/* Egili — edit inline */}
