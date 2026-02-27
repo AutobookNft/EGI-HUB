@@ -23,11 +23,11 @@ class RemoteCommandService
         'composer_install' => 'composer install --no-dev --optimize-autoloader',
         'npm_install'      => 'npm install',
         'npm_build'        => 'npm run build',
-        'cache_clear'      => 'php artisan cache:clear',
-        'config_cache'     => 'php artisan config:cache && php artisan cache:clear',
-        'migrate'          => 'php artisan migrate --force',
-        'queue_restart'    => 'php artisan queue:restart',
-        'deploy_full'      => 'git pull && composer install --no-dev --optimize-autoloader && php artisan migrate --force && php artisan config:cache && php artisan cache:clear && php artisan queue:restart',
+        'cache_clear'      => 'if [ -f artisan ]; then php artisan cache:clear; else echo "Skip: artisan non trovato"; fi',
+        'config_cache'     => 'if [ -f artisan ]; then php artisan config:cache && php artisan cache:clear; else echo "Skip: artisan non trovato"; fi',
+        'migrate'          => 'if [ -f artisan ]; then php artisan migrate --force; else echo "Skip: artisan non trovato"; fi',
+        'queue_restart'    => 'if [ -f artisan ]; then php artisan queue:restart; else echo "Skip: artisan non trovato"; fi',
+        'deploy_full'      => 'git pull && ([ -f composer.json ] && composer install --no-dev --optimize-autoloader || true) && ([ -f package.json ] && npm install && npm run build || true) && ([ -f artisan ] && php artisan migrate --force && php artisan config:cache && php artisan cache:clear && php artisan queue:restart || true)',
     ];
 
     private SsmClient $ssm;
