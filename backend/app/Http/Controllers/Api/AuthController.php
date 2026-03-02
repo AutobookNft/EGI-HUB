@@ -18,20 +18,19 @@ use Ultra\ErrorManager\Interfaces\ErrorManagerInterface;
  * Gestisce login, logout e registrazione degli utenti.
  * Utilizza Laravel Sanctum per i token API.
  */
-class AuthController extends Controller
-{
+class AuthController extends Controller {
     public function __construct(
         protected UltraLogManager $logger,
         protected ErrorManagerInterface $errorManager
-    ) {}
+    ) {
+    }
 
     /**
      * Login utente
      * 
      * POST /api/auth/login
      */
-    public function login(Request $request): JsonResponse
-    {
+    public function login(Request $request): JsonResponse {
         try {
             $request->validate([
                 'email' => 'required|email',
@@ -49,20 +48,31 @@ class AuthController extends Controller
             // Revoca tutti i token esistenti (single session)
             $user->tokens()->delete();
 
+            // Se è superadmin o ha la 2FA abilitata, diamo un token provvisorio che necessita la verifica
+            $abilities = ['*'];
+            $twoFactorRequired = false;
+
+            if ($user->is_super_admin || $user->two_factor_confirmed_at) {
+                $abilities = ['2fa:pending'];
+                $twoFactorRequired = true;
+            }
+
             // Crea nuovo token
-            $token = $user->createToken('auth-token')->plainTextToken;
+            $token = $user->createToken('auth-token', $abilities)->plainTextToken;
 
             return response()->json([
                 'success' => true,
-                'message' => 'Login effettuato con successo',
+                'message' => 'Login effettuato',
                 'data' => [
                     'user' => [
                         'id' => $user->id,
                         'name' => $user->name,
                         'email' => $user->email,
                         'is_super_admin' => $user->is_super_admin,
+                        'two_factor_confirmed' => !is_null($user->two_factor_confirmed_at)
                     ],
                     'token' => $token,
+                    'requires_2fa' => $twoFactorRequired,
                 ],
             ]);
         } catch (ValidationException $e) {
@@ -80,8 +90,7 @@ class AuthController extends Controller
      * 
      * POST /api/auth/register
      */
-    public function register(Request $request): JsonResponse
-    {
+    public function register(Request $request): JsonResponse {
         try {
             $request->validate([
                 'name' => 'required|string|max:255',
@@ -126,8 +135,7 @@ class AuthController extends Controller
      * 
      * POST /api/auth/logout
      */
-    public function logout(Request $request): JsonResponse
-    {
+    public function logout(Request $request): JsonResponse {
         try {
             // Revoca il token corrente
             $request->user()->currentAccessToken()->delete();
@@ -137,13 +145,13 @@ class AuthController extends Controller
                 'message' => 'Logout effettuato',
             ]);
         } catch (\Exception $e) {
-             // Non bloccante per l'utente, ma logghiamo
-             $this->logger->warning("Logout failed", [
-                 'user_id' => $request->user()?->id,
-                 'error' => $e->getMessage()
-             ]);
-             
-             return response()->json(['success' => false, 'message' => 'Error during logout'], 500);
+            // Non bloccante per l'utente, ma logghiamo
+            $this->logger->warning("Logout failed", [
+                'user_id' => $request->user()?->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json(['success' => false, 'message' => 'Error during logout'], 500);
         }
     }
 
@@ -152,8 +160,7 @@ class AuthController extends Controller
      * 
      * GET /api/auth/me
      */
-    public function me(Request $request): JsonResponse
-    {
+    public function me(Request $request): JsonResponse {
         try {
             $user = $request->user();
 
@@ -179,8 +186,7 @@ class AuthController extends Controller
      * 
      * PUT /api/auth/profile
      */
-    public function updateProfile(Request $request): JsonResponse
-    {
+    public function updateProfile(Request $request): JsonResponse {
         try {
             $user = $request->user();
 

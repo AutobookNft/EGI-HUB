@@ -32,16 +32,24 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Gestione Logout per sessione invalida
     if (error.response?.status === 401) {
-      // Evita loop infiniti: pulisci sempre lo storage su 401
       localStorage.removeItem('egi_hub_token');
       localStorage.removeItem('egi_hub_user');
 
-      // Reindirizza solo se non siamo già sulla pagina di login
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
     }
+
+    // Gestione 2FA Obbligatoria ma non superata
+    if (error.response?.status === 403 &&
+      (error.response?.data?.error === '2fa_setup_required' || error.response?.data?.error === '2fa_challenge_required')) {
+      if (window.location.pathname !== '/2fa-challenge') {
+        window.location.href = '/2fa-challenge';
+      }
+    }
+
     return Promise.reject(error)
   }
 )

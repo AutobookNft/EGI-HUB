@@ -3,14 +3,12 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Rimuove i record inventati dall'AI da ai_feature_pricing.
      * Si tengono solo i 4 pacchetti AI Token legittimi.
      */
-    public function up(): void
-    {
+    public function up(): void {
         DB::table('ai_feature_pricing')
             ->whereNotIn('feature_code', [
                 'ai_token_pack_starter',
@@ -21,8 +19,7 @@ return new class extends Migration
             ->delete();
     }
 
-    public function down(): void
-    {
+    public function down(): void {
         // Non si ripristinano record inventati
     }
 };

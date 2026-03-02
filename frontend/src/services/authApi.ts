@@ -19,6 +19,7 @@ export interface AuthResponse {
   data: {
     user: User;
     token: string;
+    requires_2fa?: boolean;
   };
 }
 
@@ -77,12 +78,33 @@ export async function updateProfile(data: {
   return response.data.data;
 }
 
+/**
+ * 2FA API
+ */
+export async function setup2fa(): Promise<{ secret: string; qr_code_url: string; is_confirmed: boolean }> {
+  const response = await api.post('/auth/2fa/setup');
+  return response.data.data;
+}
+
+export async function confirm2fa(code: string): Promise<{ success: boolean; message: string }> {
+  const response = await api.post('/auth/2fa/confirm', { code });
+  return response.data;
+}
+
+export async function verify2fa(code: string): Promise<{ success: boolean; message: string }> {
+  const response = await api.post('/auth/2fa/verify', { code });
+  return response.data;
+}
+
 export const authApi = {
   login,
   register,
   logout,
   getMe,
   updateProfile,
+  setup2fa,
+  confirm2fa,
+  verify2fa,
 };
 
 export default authApi;

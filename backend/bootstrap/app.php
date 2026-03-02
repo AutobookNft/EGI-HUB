@@ -12,9 +12,9 @@ EarlyEnvironmentHelper::loadCriticalEnvironmentVariables(dirname(__DIR__));
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        api: __DIR__.'/../routes/api.php',
-        web: __DIR__.'/../routes/web.php',
-        commands: __DIR__.'/../routes/console.php',
+        api: __DIR__ . '/../routes/api.php',
+        web: __DIR__ . '/../routes/web.php',
+        commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'project.access' => \App\Http\Middleware\ProjectAccess::class,
             'project.permission' => \App\Http\Middleware\ProjectPermission::class,
             'super.admin' => \App\Http\Middleware\SuperAdminOnly::class,
+            'ensure.2fa' => \App\Http\Middleware\EnsureTwoFactorPassed::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

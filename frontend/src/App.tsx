@@ -52,6 +52,8 @@ import TenantStorage from './pages/tenants/TenantStorage'
 // Project Context Pages (when inside a specific project)
 import ProjectDashboard from './pages/projects/ProjectDashboard'
 
+import TwoFactorChallenge from './pages/auth/2fa/TwoFactorChallenge'
+
 // System Settings
 import SystemConfig from './pages/system/SystemConfig'
 import SystemDaemons from './pages/system/SystemDaemons'
@@ -113,6 +115,12 @@ function AppRoutes() {
       } />
       
       {/* Protected Routes */}
+      <Route path="/2fa-challenge" element={
+        <ProtectedRoute>
+          <TwoFactorChallenge />
+        </ProtectedRoute>
+      } />
+      
       <Route path="/" element={
         <ProtectedRoute>
           <Layout />

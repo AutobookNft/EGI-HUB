@@ -88,6 +88,11 @@ Route::middleware(['auth:sanctum', 'super.admin'])->group(function () {
         Route::post('logout', [AuthController::class, 'logout'])->name('logout');
         Route::get('me', [AuthController::class, 'me'])->name('me');
         Route::put('profile', [AuthController::class, 'updateProfile'])->name('profile');
+
+        // 2FA Routes (Accessibili anche con token 'pendente' per configurarla)
+        Route::post('2fa/setup', [\App\Http\Controllers\Api\Auth\TwoFactorAuthenticationController::class, 'setup'])->name('2fa.setup');
+        Route::post('2fa/confirm', [\App\Http\Controllers\Api\Auth\TwoFactorAuthenticationController::class, 'confirm'])->name('2fa.confirm');
+        Route::post('2fa/verify', [\App\Http\Controllers\Api\Auth\TwoFactorAuthenticationController::class, 'verify'])->name('2fa.verify');
     });
 });
 
@@ -95,9 +100,9 @@ Route::middleware(['auth:sanctum', 'super.admin'])->group(function () {
 |--------------------------------------------------------------------------
 | Protected Routes - SuperAdmin Only
 |--------------------------------------------------------------------------
-| All routes below require authentication and superadmin privileges
+| All routes below require authentication, superadmin privileges, AND 2FA verification
 */
-Route::middleware(['auth:sanctum', 'super.admin'])->group(function () {
+Route::middleware(['auth:sanctum', 'ensure.2fa', 'super.admin'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
@@ -108,191 +113,191 @@ Route::middleware(['auth:sanctum', 'super.admin'])->group(function () {
     */
     Route::prefix('superadmin')->name('superadmin.')->group(function () {
 
-    // Dashboard
-    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('stats', [DashboardController::class, 'stats'])->name('stats');
+        // Dashboard
+        Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('stats', [DashboardController::class, 'stats'])->name('stats');
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | AI Management
     |--------------------------------------------------------------------------
     */
-    Route::prefix('ai')->name('ai.')->group(function () {
-        // Consultations
-        Route::get('consultations', [AiConsultationsController::class, 'index'])->name('consultations.index');
-        Route::get('consultations/{id}', [AiConsultationsController::class, 'show'])->name('consultations.show');
+        Route::prefix('ai')->name('ai.')->group(function () {
+            // Consultations
+            Route::get('consultations', [AiConsultationsController::class, 'index'])->name('consultations.index');
+            Route::get('consultations/{id}', [AiConsultationsController::class, 'show'])->name('consultations.show');
 
-        // Credits
-        Route::get('credits', [AiCreditsController::class, 'index'])->name('credits.index');
-        Route::post('credits', [AiCreditsController::class, 'store'])->name('credits.store');
-        Route::post('credits/{userId}/reset', [AiCreditsController::class, 'reset'])->name('credits.reset');
+            // Credits
+            Route::get('credits', [AiCreditsController::class, 'index'])->name('credits.index');
+            Route::post('credits', [AiCreditsController::class, 'store'])->name('credits.store');
+            Route::post('credits/{userId}/reset', [AiCreditsController::class, 'reset'])->name('credits.reset');
 
-        // Features
-        Route::get('features', [AiFeaturesController::class, 'index'])->name('features.index');
-        Route::post('features/{slug}/toggle', [AiFeaturesController::class, 'toggle'])->name('features.toggle');
-        Route::put('features/{slug}', [AiFeaturesController::class, 'update'])->name('features.update');
+            // Features
+            Route::get('features', [AiFeaturesController::class, 'index'])->name('features.index');
+            Route::post('features/{slug}/toggle', [AiFeaturesController::class, 'toggle'])->name('features.toggle');
+            Route::put('features/{slug}', [AiFeaturesController::class, 'update'])->name('features.update');
 
-        // Statistics
-        Route::get('statistics', [AiStatisticsController::class, 'index'])->name('statistics');
-    });
+            // Statistics
+            Route::get('statistics', [AiStatisticsController::class, 'index'])->name('statistics');
+        });
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Tokenomics
     |--------------------------------------------------------------------------
     */
-    Route::prefix('tokenomics')->name('tokenomics.')->group(function () {
-        // Egili
-        Route::get('egili', [EgiliController::class, 'index'])->name('egili.index');
-        Route::post('egili/mint', [EgiliController::class, 'mint'])->name('egili.mint');
-        Route::post('egili/burn', [EgiliController::class, 'burn'])->name('egili.burn');
+        Route::prefix('tokenomics')->name('tokenomics.')->group(function () {
+            // Egili
+            Route::get('egili', [EgiliController::class, 'index'])->name('egili.index');
+            Route::post('egili/mint', [EgiliController::class, 'mint'])->name('egili.mint');
+            Route::post('egili/burn', [EgiliController::class, 'burn'])->name('egili.burn');
 
-        // Equilibrium
-        Route::get('equilibrium', [EquilibriumController::class, 'index'])->name('equilibrium.index');
-        Route::post('equilibrium/recalculate', [EquilibriumController::class, 'recalculate'])->name('equilibrium.recalculate');
-    });
+            // Equilibrium
+            Route::get('equilibrium', [EquilibriumController::class, 'index'])->name('equilibrium.index');
+            Route::post('equilibrium/recalculate', [EquilibriumController::class, 'recalculate'])->name('equilibrium.recalculate');
+        });
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Platform Management
     |--------------------------------------------------------------------------
     */
-    Route::prefix('platform')->name('platform.')->group(function () {
-        // Roles
-        Route::get('roles', [RolesController::class, 'index'])->name('roles.index');
-        Route::post('roles', [RolesController::class, 'store'])->name('roles.store');
-        Route::delete('roles/{id}', [RolesController::class, 'destroy'])->name('roles.destroy');
+        Route::prefix('platform')->name('platform.')->group(function () {
+            // Roles
+            Route::get('roles', [RolesController::class, 'index'])->name('roles.index');
+            Route::post('roles', [RolesController::class, 'store'])->name('roles.store');
+            Route::delete('roles/{id}', [RolesController::class, 'destroy'])->name('roles.destroy');
 
-        // Feature Pricing
-        Route::get('pricing', [FeaturePricingController::class, 'index'])->name('pricing.index');
-        Route::post('pricing', [FeaturePricingController::class, 'store'])->name('pricing.store');
-        Route::get('pricing/{id}', [FeaturePricingController::class, 'show'])->name('pricing.show');
-        Route::put('pricing/{id}', [FeaturePricingController::class, 'update'])->name('pricing.update');
-        Route::delete('pricing/{id}', [FeaturePricingController::class, 'destroy'])->name('pricing.destroy');
+            // Feature Pricing
+            Route::get('pricing', [FeaturePricingController::class, 'index'])->name('pricing.index');
+            Route::post('pricing', [FeaturePricingController::class, 'store'])->name('pricing.store');
+            Route::get('pricing/{id}', [FeaturePricingController::class, 'show'])->name('pricing.show');
+            Route::put('pricing/{id}', [FeaturePricingController::class, 'update'])->name('pricing.update');
+            Route::delete('pricing/{id}', [FeaturePricingController::class, 'destroy'])->name('pricing.destroy');
 
-        // Promotions
-        Route::get('promotions', [PromotionsController::class, 'index'])->name('promotions.index');
-        Route::post('promotions', [PromotionsController::class, 'store'])->name('promotions.store');
-        Route::put('promotions/{id}', [PromotionsController::class, 'update'])->name('promotions.update');
-        Route::delete('promotions/{id}', [PromotionsController::class, 'destroy'])->name('promotions.destroy');
+            // Promotions
+            Route::get('promotions', [PromotionsController::class, 'index'])->name('promotions.index');
+            Route::post('promotions', [PromotionsController::class, 'store'])->name('promotions.store');
+            Route::put('promotions/{id}', [PromotionsController::class, 'update'])->name('promotions.update');
+            Route::delete('promotions/{id}', [PromotionsController::class, 'destroy'])->name('promotions.destroy');
 
-        // Featured Calendar
-        Route::get('featured-calendar', [FeaturedCalendarController::class, 'index'])->name('featured-calendar.index');
-        Route::post('featured-calendar', [FeaturedCalendarController::class, 'store'])->name('featured-calendar.store');
-        Route::delete('featured-calendar/{id}', [FeaturedCalendarController::class, 'destroy'])->name('featured-calendar.destroy');
+            // Featured Calendar
+            Route::get('featured-calendar', [FeaturedCalendarController::class, 'index'])->name('featured-calendar.index');
+            Route::post('featured-calendar', [FeaturedCalendarController::class, 'store'])->name('featured-calendar.store');
+            Route::delete('featured-calendar/{id}', [FeaturedCalendarController::class, 'destroy'])->name('featured-calendar.destroy');
 
-        // Consumption Ledger
-        Route::get('consumption-ledger', [ConsumptionLedgerController::class, 'index'])->name('consumption-ledger.index');
-        Route::get('consumption-ledger/export', [ConsumptionLedgerController::class, 'export'])->name('consumption-ledger.export');
+            // Consumption Ledger
+            Route::get('consumption-ledger', [ConsumptionLedgerController::class, 'index'])->name('consumption-ledger.index');
+            Route::get('consumption-ledger/export', [ConsumptionLedgerController::class, 'export'])->name('consumption-ledger.export');
 
-        // Platform Settings
-        Route::get('settings', [PlatformSettingsController::class, 'index'])->name('settings.index');
-        Route::put('settings/{id}', [PlatformSettingsController::class, 'update'])->name('settings.update');
-        Route::put('settings/group/{group}', [PlatformSettingsController::class, 'updateGroup'])->name('settings.updateGroup');
-    });
+            // Platform Settings
+            Route::get('settings', [PlatformSettingsController::class, 'index'])->name('settings.index');
+            Route::put('settings/{id}', [PlatformSettingsController::class, 'update'])->name('settings.update');
+            Route::put('settings/group/{group}', [PlatformSettingsController::class, 'updateGroup'])->name('settings.updateGroup');
+        });
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Billing — Subscription Plans & Tenant Subscriptions
     |--------------------------------------------------------------------------
     */
-    Route::prefix('billing')->name('billing.')->group(function () {
-        // Piani
-        Route::get('plans', [SubscriptionPlansController::class, 'index'])->name('plans.index');
-        Route::post('plans', [SubscriptionPlansController::class, 'store'])->name('plans.store');
-        Route::get('plans/{id}', [SubscriptionPlansController::class, 'show'])->name('plans.show');
-        Route::put('plans/{id}', [SubscriptionPlansController::class, 'update'])->name('plans.update');
-        Route::delete('plans/{id}', [SubscriptionPlansController::class, 'destroy'])->name('plans.destroy');
+        Route::prefix('billing')->name('billing.')->group(function () {
+            // Piani
+            Route::get('plans', [SubscriptionPlansController::class, 'index'])->name('plans.index');
+            Route::post('plans', [SubscriptionPlansController::class, 'store'])->name('plans.store');
+            Route::get('plans/{id}', [SubscriptionPlansController::class, 'show'])->name('plans.show');
+            Route::put('plans/{id}', [SubscriptionPlansController::class, 'update'])->name('plans.update');
+            Route::delete('plans/{id}', [SubscriptionPlansController::class, 'destroy'])->name('plans.destroy');
 
-        // Sottoscrizioni tenant
-        Route::get('subscriptions', [SubscriptionPlansController::class, 'subscriptions'])->name('subscriptions.index');
-        Route::post('subscriptions', [SubscriptionPlansController::class, 'storeSubscription'])->name('subscriptions.store');
-        Route::put('subscriptions/{id}', [SubscriptionPlansController::class, 'updateSubscription'])->name('subscriptions.update');
-        Route::delete('subscriptions/{id}', [SubscriptionPlansController::class, 'destroySubscription'])->name('subscriptions.destroy');
+            // Sottoscrizioni tenant
+            Route::get('subscriptions', [SubscriptionPlansController::class, 'subscriptions'])->name('subscriptions.index');
+            Route::post('subscriptions', [SubscriptionPlansController::class, 'storeSubscription'])->name('subscriptions.store');
+            Route::put('subscriptions/{id}', [SubscriptionPlansController::class, 'updateSubscription'])->name('subscriptions.update');
+            Route::delete('subscriptions/{id}', [SubscriptionPlansController::class, 'destroySubscription'])->name('subscriptions.destroy');
 
-        // Payment Provider Configs
-        Route::get('payment-providers', [PaymentProviderConfigsController::class, 'index'])->name('payment-providers.index');
-        Route::post('payment-providers', [PaymentProviderConfigsController::class, 'store'])->name('payment-providers.store');
-        Route::put('payment-providers/{id}', [PaymentProviderConfigsController::class, 'update'])->name('payment-providers.update');
-        Route::delete('payment-providers/{id}', [PaymentProviderConfigsController::class, 'destroy'])->name('payment-providers.destroy');
-        Route::get('payment-providers/schema/{provider}', [PaymentProviderConfigsController::class, 'schema'])->name('payment-providers.schema');
-    });
+            // Payment Provider Configs
+            Route::get('payment-providers', [PaymentProviderConfigsController::class, 'index'])->name('payment-providers.index');
+            Route::post('payment-providers', [PaymentProviderConfigsController::class, 'store'])->name('payment-providers.store');
+            Route::put('payment-providers/{id}', [PaymentProviderConfigsController::class, 'update'])->name('payment-providers.update');
+            Route::delete('payment-providers/{id}', [PaymentProviderConfigsController::class, 'destroy'])->name('payment-providers.destroy');
+            Route::get('payment-providers/schema/{provider}', [PaymentProviderConfigsController::class, 'schema'])->name('payment-providers.schema');
+        });
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Analytics / Dashboard Economica (FASE 5 — read-only)
     |--------------------------------------------------------------------------
     */
-    Route::prefix('analytics')->name('analytics.')->group(function () {
-        Route::get('revenue',     [RevenueAggregationController::class,     'index'])->name('revenue');
-        Route::get('consumption', [ConsumptionAggregationController::class, 'index'])->name('consumption');
-        Route::get('egili',       [EgiliEconomicsController::class,          'index'])->name('egili');
-    });
+        Route::prefix('analytics')->name('analytics.')->group(function () {
+            Route::get('revenue',     [RevenueAggregationController::class,     'index'])->name('revenue');
+            Route::get('consumption', [ConsumptionAggregationController::class, 'index'])->name('consumption');
+            Route::get('egili',       [EgiliEconomicsController::class,          'index'])->name('egili');
+        });
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Padmin OS3
     |--------------------------------------------------------------------------
     */
-    Route::prefix('padmin')->name('padmin.')->group(function () {
-        // Dashboard
-        Route::get('dashboard', [PadminDashboardController::class, 'index'])->name('dashboard');
-        Route::post('scan', [PadminDashboardController::class, 'scan'])->name('scan');
+        Route::prefix('padmin')->name('padmin.')->group(function () {
+            // Dashboard
+            Route::get('dashboard', [PadminDashboardController::class, 'index'])->name('dashboard');
+            Route::post('scan', [PadminDashboardController::class, 'scan'])->name('scan');
 
-        // Violations
-        Route::get('violations', [PadminViolationsController::class, 'index'])->name('violations.index');
-        Route::put('violations/{id}', [PadminViolationsController::class, 'update'])->name('violations.update');
-        Route::post('violations/{id}/autofix', [PadminViolationsController::class, 'autofix'])->name('violations.autofix');
+            // Violations
+            Route::get('violations', [PadminViolationsController::class, 'index'])->name('violations.index');
+            Route::put('violations/{id}', [PadminViolationsController::class, 'update'])->name('violations.update');
+            Route::post('violations/{id}/autofix', [PadminViolationsController::class, 'autofix'])->name('violations.autofix');
 
-        // Symbols
-        Route::get('symbols', [PadminSymbolsController::class, 'index'])->name('symbols.index');
-        Route::get('symbols/{id}', [PadminSymbolsController::class, 'show'])->name('symbols.show');
-        Route::post('symbols/analyze', [PadminSymbolsController::class, 'analyze'])->name('symbols.analyze');
+            // Symbols
+            Route::get('symbols', [PadminSymbolsController::class, 'index'])->name('symbols.index');
+            Route::get('symbols/{id}', [PadminSymbolsController::class, 'show'])->name('symbols.show');
+            Route::post('symbols/analyze', [PadminSymbolsController::class, 'analyze'])->name('symbols.analyze');
 
-        // Search
-        Route::get('search', [PadminSearchController::class, 'index'])->name('search');
+            // Search
+            Route::get('search', [PadminSearchController::class, 'index'])->name('search');
 
-        // Statistics
-        Route::get('statistics', [PadminStatisticsController::class, 'index'])->name('statistics');
-    });
+            // Statistics
+            Route::get('statistics', [PadminStatisticsController::class, 'index'])->name('statistics');
+        });
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Daemon Management
     |--------------------------------------------------------------------------
     */
-    Route::prefix('daemons')->name('daemons.')->group(function () {
-        Route::get('/', [DaemonController::class, 'index'])->name('index');
-        Route::get('stats', [DaemonController::class, 'stats'])->name('stats');
-        Route::post('/', [DaemonController::class, 'store'])->name('store');
-        Route::get('{daemon}', [DaemonController::class, 'show'])->name('show');
-        Route::put('{daemon}', [DaemonController::class, 'update'])->name('update');
-        Route::delete('{daemon}', [DaemonController::class, 'destroy'])->name('destroy');
-        Route::post('{daemon}/start', [DaemonController::class, 'start'])->name('start');
-        Route::post('{daemon}/stop', [DaemonController::class, 'stop'])->name('stop');
-        Route::post('{daemon}/restart', [DaemonController::class, 'restart'])->name('restart');
-        Route::get('{daemon}/logs', [DaemonController::class, 'logs'])->name('logs');
+        Route::prefix('daemons')->name('daemons.')->group(function () {
+            Route::get('/', [DaemonController::class, 'index'])->name('index');
+            Route::get('stats', [DaemonController::class, 'stats'])->name('stats');
+            Route::post('/', [DaemonController::class, 'store'])->name('store');
+            Route::get('{daemon}', [DaemonController::class, 'show'])->name('show');
+            Route::put('{daemon}', [DaemonController::class, 'update'])->name('update');
+            Route::delete('{daemon}', [DaemonController::class, 'destroy'])->name('destroy');
+            Route::post('{daemon}/start', [DaemonController::class, 'start'])->name('start');
+            Route::post('{daemon}/stop', [DaemonController::class, 'stop'])->name('stop');
+            Route::post('{daemon}/restart', [DaemonController::class, 'restart'])->name('restart');
+            Route::get('{daemon}/logs', [DaemonController::class, 'logs'])->name('logs');
+        });
     });
-});
 
-/*
+    /*
 |--------------------------------------------------------------------------
 | Aggregations API
 |--------------------------------------------------------------------------
 */
-Route::prefix('aggregations')->name('aggregations.')->group(function () {
-    Route::get('/', [AggregationController::class, 'index'])->name('index');
-    Route::post('/', [AggregationController::class, 'store'])->name('store');
-    Route::get('{aggregation}', [AggregationController::class, 'show'])->name('show');
-    Route::put('{aggregation}', [AggregationController::class, 'update'])->name('update');
-    Route::delete('{aggregation}', [AggregationController::class, 'destroy'])->name('destroy');
+    Route::prefix('aggregations')->name('aggregations.')->group(function () {
+        Route::get('/', [AggregationController::class, 'index'])->name('index');
+        Route::post('/', [AggregationController::class, 'store'])->name('store');
+        Route::get('{aggregation}', [AggregationController::class, 'show'])->name('show');
+        Route::put('{aggregation}', [AggregationController::class, 'update'])->name('update');
+        Route::delete('{aggregation}', [AggregationController::class, 'destroy'])->name('destroy');
 
-    // Members management
-    Route::post('{aggregation}/invite', [AggregationController::class, 'invite'])->name('invite');
-    Route::get('{aggregation}/members', [AggregationController::class, 'members'])->name('members');
-});
+        // Members management
+        Route::post('{aggregation}/invite', [AggregationController::class, 'invite'])->name('invite');
+        Route::get('{aggregation}/members', [AggregationController::class, 'members'])->name('members');
+    });
 
-/*
+    /*
 |--------------------------------------------------------------------------
 | Projects Management API (NEW - Primary)
 |--------------------------------------------------------------------------
@@ -300,149 +305,148 @@ Route::prefix('aggregations')->name('aggregations.')->group(function () {
 | Projects = NATAN_LOC, FlorenceArtEGI, etc.
 | Only accessible by SuperAdmin.
 */
-Route::prefix('projects')->name('projects.')->group(function () {
-    // CRUD operations
-    Route::get('/', [ProjectController::class, 'index'])->name('index');
-    Route::post('/', [ProjectController::class, 'store'])->name('store');
-    Route::get('stats', [ProjectController::class, 'stats'])->name('stats');
-    Route::get('{project}', [ProjectController::class, 'show'])->name('show');
-    Route::put('{project}', [ProjectController::class, 'update'])->name('update');
-    Route::delete('{project}', [ProjectController::class, 'destroy'])->name('destroy');
+    Route::prefix('projects')->name('projects.')->group(function () {
+        // CRUD operations
+        Route::get('/', [ProjectController::class, 'index'])->name('index');
+        Route::post('/', [ProjectController::class, 'store'])->name('store');
+        Route::get('stats', [ProjectController::class, 'stats'])->name('stats');
+        Route::get('{project}', [ProjectController::class, 'show'])->name('show');
+        Route::put('{project}', [ProjectController::class, 'update'])->name('update');
+        Route::delete('{project}', [ProjectController::class, 'destroy'])->name('destroy');
 
-    // Health checks
-    Route::get('{project}/health', [ProjectController::class, 'healthCheck'])->name('health');
-    Route::post('health-check-all', [ProjectController::class, 'healthCheckAll'])->name('health-all');
+        // Health checks
+        Route::get('{project}/health', [ProjectController::class, 'healthCheck'])->name('health');
+        Route::post('health-check-all', [ProjectController::class, 'healthCheckAll'])->name('health-all');
 
-    // Route 53 auto-discovery
-    Route::post('discover', [ProjectController::class, 'discover'])->name('discover');
+        // Route 53 auto-discovery
+        Route::post('discover', [ProjectController::class, 'discover'])->name('discover');
 
-    // Service control (Start/Stop)
-    Route::post('{project}/start', [ProjectController::class, 'start'])->name('start');
-    Route::post('{project}/stop', [ProjectController::class, 'stop'])->name('stop');
+        // Service control (Start/Stop)
+        Route::post('{project}/start', [ProjectController::class, 'start'])->name('start');
+        Route::post('{project}/stop', [ProjectController::class, 'stop'])->name('stop');
 
-    // Remote command execution via AWS SSM
-    Route::post('{project}/remote-command', [ProjectController::class, 'remoteCommand'])->name('remote-command');
+        // Remote command execution via AWS SSM
+        Route::post('{project}/remote-command', [ProjectController::class, 'remoteCommand'])->name('remote-command');
 
-    // Stack detection (artisan/composer/npm) — cached in metadata for 1h
-    Route::post('{project}/detect-stack', [ProjectController::class, 'detectStack'])->name('detect-stack');
+        // Stack detection (artisan/composer/npm) — cached in metadata for 1h
+        Route::post('{project}/detect-stack', [ProjectController::class, 'detectStack'])->name('detect-stack');
 
-    // Project activities
-    Route::get('{project}/activities', [ProjectActivityController::class, 'forProject'])->name('activities');
+        // Project activities
+        Route::get('{project}/activities', [ProjectActivityController::class, 'forProject'])->name('activities');
 
-    // Project Admins management
-    Route::get('{slug}/admins', [ProjectAdminController::class, 'index'])->name('admins.index');
-    Route::post('{slug}/admins', [ProjectAdminController::class, 'store'])->name('admins.store');
-    Route::get('{slug}/admins/{adminId}', [ProjectAdminController::class, 'show'])->name('admins.show');
-    Route::put('{slug}/admins/{adminId}', [ProjectAdminController::class, 'update'])->name('admins.update');
-    Route::delete('{slug}/admins/{adminId}', [ProjectAdminController::class, 'destroy'])->name('admins.destroy');
-    Route::post('{slug}/admins/{adminId}/suspend', [ProjectAdminController::class, 'suspend'])->name('admins.suspend');
-    Route::post('{slug}/admins/{adminId}/reactivate', [ProjectAdminController::class, 'reactivate'])->name('admins.reactivate');
-});
+        // Project Admins management
+        Route::get('{slug}/admins', [ProjectAdminController::class, 'index'])->name('admins.index');
+        Route::post('{slug}/admins', [ProjectAdminController::class, 'store'])->name('admins.store');
+        Route::get('{slug}/admins/{adminId}', [ProjectAdminController::class, 'show'])->name('admins.show');
+        Route::put('{slug}/admins/{adminId}', [ProjectAdminController::class, 'update'])->name('admins.update');
+        Route::delete('{slug}/admins/{adminId}', [ProjectAdminController::class, 'destroy'])->name('admins.destroy');
+        Route::post('{slug}/admins/{adminId}/suspend', [ProjectAdminController::class, 'suspend'])->name('admins.suspend');
+        Route::post('{slug}/admins/{adminId}/reactivate', [ProjectAdminController::class, 'reactivate'])->name('admins.reactivate');
+    });
 
-/*
+    /*
 |--------------------------------------------------------------------------
 | My Projects API (User's accessible projects)
 |--------------------------------------------------------------------------
 */
-Route::middleware('auth:sanctum')->group(function () {
-    Route::prefix('auth')->name('auth.')->group(function () {
-        Route::post('logout', [AuthController::class, 'logout'])->name('logout');
-        Route::get('me', [AuthController::class, 'me'])->name('me');
-        Route::put('profile', [AuthController::class, 'updateProfile'])->name('profile');
-    });
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::prefix('auth')->name('auth.')->group(function () {
+            Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+            Route::get('me', [AuthController::class, 'me'])->name('me');
+            Route::put('profile', [AuthController::class, 'updateProfile'])->name('profile');
+        });
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | Privacy & GDPR
     |--------------------------------------------------------------------------
     */
-    Route::prefix('privacy')->name('privacy.')->group(function () {
-        Route::get('export', [App\Http\Controllers\Api\GdprController::class, 'export'])->name('export');
-        Route::delete('forget-me', [App\Http\Controllers\Api\GdprController::class, 'destroy'])->name('destroy');
-    });
+        Route::prefix('privacy')->name('privacy.')->group(function () {
+            Route::get('export', [App\Http\Controllers\Api\GdprController::class, 'export'])->name('export');
+            Route::delete('forget-me', [App\Http\Controllers\Api\GdprController::class, 'destroy'])->name('destroy');
+        });
 
-    Route::prefix('consents')->name('consents.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Api\ConsentController::class, 'index'])->name('index');
-        Route::post('/', [App\Http\Controllers\Api\ConsentController::class, 'update'])->name('update');
-        Route::get('history', [App\Http\Controllers\Api\ConsentController::class, 'history'])->name('history');
-    });
+        Route::prefix('consents')->name('consents.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Api\ConsentController::class, 'index'])->name('index');
+            Route::post('/', [App\Http\Controllers\Api\ConsentController::class, 'update'])->name('update');
+            Route::get('history', [App\Http\Controllers\Api\ConsentController::class, 'history'])->name('history');
+        });
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | My Projects API (User's accessible projects)
     |--------------------------------------------------------------------------
     */
-    Route::get('my-projects', [ProjectAdminController::class, 'myProjects'])->name('my-projects');
-});
+        Route::get('my-projects', [ProjectAdminController::class, 'myProjects'])->name('my-projects');
+    });
 
-/*
+    /*
 |--------------------------------------------------------------------------
 | Tenants Management API (LEGACY - Deprecated, use /projects instead)
 |--------------------------------------------------------------------------
 | Maintained for backward compatibility.
 | Will be removed in future versions.
 */
-Route::prefix('tenants')->name('tenants.')->group(function () {
-    // CRUD operations
-    Route::get('/', [TenantController::class, 'index'])->name('index');
-    Route::post('/', [TenantController::class, 'store'])->name('store');
-    Route::get('stats', [TenantController::class, 'stats'])->name('stats');
-    Route::get('{tenant}', [TenantController::class, 'show'])->name('show');
-    Route::put('{tenant}', [TenantController::class, 'update'])->name('update');
-    Route::delete('{tenant}', [TenantController::class, 'destroy'])->name('destroy');
+    Route::prefix('tenants')->name('tenants.')->group(function () {
+        // CRUD operations
+        Route::get('/', [TenantController::class, 'index'])->name('index');
+        Route::post('/', [TenantController::class, 'store'])->name('store');
+        Route::get('stats', [TenantController::class, 'stats'])->name('stats');
+        Route::get('{tenant}', [TenantController::class, 'show'])->name('show');
+        Route::put('{tenant}', [TenantController::class, 'update'])->name('update');
+        Route::delete('{tenant}', [TenantController::class, 'destroy'])->name('destroy');
 
-    // Health checks
-    Route::get('{tenant}/health', [TenantController::class, 'healthCheck'])->name('health');
-    Route::post('health-check-all', [TenantController::class, 'healthCheckAll'])->name('health-all');
+        // Health checks
+        Route::get('{tenant}/health', [TenantController::class, 'healthCheck'])->name('health');
+        Route::post('health-check-all', [TenantController::class, 'healthCheckAll'])->name('health-all');
 
-    // Service control (Start/Stop)
-    Route::post('{tenant}/start', [TenantController::class, 'start'])->name('start');
-    Route::post('{tenant}/stop', [TenantController::class, 'stop'])->name('stop');
+        // Service control (Start/Stop)
+        Route::post('{tenant}/start', [TenantController::class, 'start'])->name('start');
+        Route::post('{tenant}/stop', [TenantController::class, 'stop'])->name('stop');
 
-    // Tenant activities
-    Route::get('{tenant}/activities', [TenantActivityController::class, 'forTenant'])->name('activities');
-});
+        // Tenant activities
+        Route::get('{tenant}/activities', [TenantActivityController::class, 'forTenant'])->name('activities');
+    });
 
-/*
+    /*
 |--------------------------------------------------------------------------
 | Project Activities API
 |--------------------------------------------------------------------------
 | Routes for viewing and analyzing project activities.
 */
-Route::prefix('activities')->name('activities.')->group(function () {
-    Route::get('/', [ProjectActivityController::class, 'index'])->name('index');
-    Route::get('stats', [ProjectActivityController::class, 'stats'])->name('stats');
-    Route::get('recent', [ProjectActivityController::class, 'recent'])->name('recent');
-    Route::get('timeline', [ProjectActivityController::class, 'timeline'])->name('timeline');
-});
+    Route::prefix('activities')->name('activities.')->group(function () {
+        Route::get('/', [ProjectActivityController::class, 'index'])->name('index');
+        Route::get('stats', [ProjectActivityController::class, 'stats'])->name('stats');
+        Route::get('recent', [ProjectActivityController::class, 'recent'])->name('recent');
+        Route::get('timeline', [ProjectActivityController::class, 'timeline'])->name('timeline');
+    });
 
-/*
+    /*
 |--------------------------------------------------------------------------
 | Project Proxy API
 |--------------------------------------------------------------------------
 | Routes for proxying requests to project APIs.
 | EGI-HUB acts as intermediary between frontend and project backends.
 */
-Route::prefix('proxy')->name('proxy.')->group(function () {
-    // Aggregate data from all projects
-    Route::get('aggregate', [ProjectProxyController::class, 'aggregate'])->name('aggregate');
+    Route::prefix('proxy')->name('proxy.')->group(function () {
+        // Aggregate data from all projects
+        Route::get('aggregate', [ProjectProxyController::class, 'aggregate'])->name('aggregate');
 
-    // Proxy to specific project
-    Route::get('{projectSlug}/{path?}', [ProjectProxyController::class, 'get'])
-        ->where('path', '.*')
-        ->name('get');
-    Route::post('{projectSlug}/{path?}', [ProjectProxyController::class, 'post'])
-        ->where('path', '.*')
-        ->name('post');
-    Route::put('{projectSlug}/{path?}', [ProjectProxyController::class, 'put'])
-        ->where('path', '.*')
-        ->name('put');
-    Route::patch('{projectSlug}/{path?}', [ProjectProxyController::class, 'patch'])
-        ->where('path', '.*')
-        ->name('patch');
-    Route::delete('{projectSlug}/{path?}', [ProjectProxyController::class, 'delete'])
-        ->where('path', '.*')
-        ->name('delete');
-});
-
+        // Proxy to specific project
+        Route::get('{projectSlug}/{path?}', [ProjectProxyController::class, 'get'])
+            ->where('path', '.*')
+            ->name('get');
+        Route::post('{projectSlug}/{path?}', [ProjectProxyController::class, 'post'])
+            ->where('path', '.*')
+            ->name('post');
+        Route::put('{projectSlug}/{path?}', [ProjectProxyController::class, 'put'])
+            ->where('path', '.*')
+            ->name('put');
+        Route::patch('{projectSlug}/{path?}', [ProjectProxyController::class, 'patch'])
+            ->where('path', '.*')
+            ->name('patch');
+        Route::delete('{projectSlug}/{path?}', [ProjectProxyController::class, 'delete'])
+            ->where('path', '.*')
+            ->name('delete');
+    });
 }); // End of superadmin middleware group

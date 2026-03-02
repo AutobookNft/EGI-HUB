@@ -23,15 +23,13 @@ use Illuminate\Validation\Rule;
  * @date 2026-02-25
  * @purpose Sostituisce stub hardcoded con CRUD reale su AiFeaturePricing model
  */
-class FeaturePricingController extends Controller
-{
+class FeaturePricingController extends Controller {
     /**
      * Elenco feature pricing con filtri opzionali.
      *
      * Query params: category, bundle_type, is_active (1/0), is_bundle (1/0)
      */
-    public function index(Request $request): JsonResponse
-    {
+    public function index(Request $request): JsonResponse {
         try {
             $query = AiFeaturePricing::query()->orderBy('display_order')->orderBy('feature_category');
 
@@ -69,8 +67,7 @@ class FeaturePricingController extends Controller
     /**
      * Dettaglio singola feature pricing.
      */
-    public function show(int $id): JsonResponse
-    {
+    public function show(int $id): JsonResponse {
         try {
             $item = AiFeaturePricing::findOrFail($id);
 
@@ -94,8 +91,7 @@ class FeaturePricingController extends Controller
     /**
      * Crea nuova feature pricing.
      */
-    public function store(Request $request): JsonResponse
-    {
+    public function store(Request $request): JsonResponse {
         $validated = $request->validate([
             'feature_code'        => 'required|string|max:100|unique:ai_feature_pricing,feature_code',
             'feature_name'        => 'required|string|max:255',
@@ -135,8 +131,7 @@ class FeaturePricingController extends Controller
     /**
      * Aggiorna feature pricing esistente — supporta aggiornamento parziale.
      */
-    public function update(Request $request, int $id): JsonResponse
-    {
+    public function update(Request $request, int $id): JsonResponse {
         $validated = $request->validate([
             'feature_name'        => 'sometimes|string|max:255',
             'feature_description' => 'sometimes|nullable|string',
@@ -186,8 +181,7 @@ class FeaturePricingController extends Controller
     /**
      * Soft-delete feature pricing.
      */
-    public function destroy(int $id): JsonResponse
-    {
+    public function destroy(int $id): JsonResponse {
         try {
             $item = AiFeaturePricing::findOrFail($id);
             $item->delete();
