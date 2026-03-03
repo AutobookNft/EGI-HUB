@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DollarSign, Loader2, AlertCircle, Edit2, Check, X, Trash2, ToggleLeft, ToggleRight, Settings } from 'lucide-react';
 import api from '../../services/api';
@@ -75,6 +75,18 @@ export default function FeaturePricing() {
   const [detailName, setDetailName] = useState('');
   const [detailBenefits, setDetailBenefits] = useState(''); // una riga per benefit
   const [detailMaxEgis, setDetailMaxEgis] = useState('');
+  const detailDialogRef = useRef<HTMLDialogElement>(null);
+
+  // DaisyUI v5: usa showModal()/close() nativi per overlay corretto
+  useEffect(() => {
+    const dialog = detailDialogRef.current;
+    if (!dialog) return;
+    if (detailItem) {
+      dialog.showModal();
+    } else {
+      dialog.close();
+    }
+  }, [detailItem]);
 
   // === QUERY ===
   const { data, isLoading, error } = useQuery<ApiResponse>({
@@ -445,8 +457,8 @@ export default function FeaturePricing() {
       </div>
     </div>
 
-      {/* MODAL DETTAGLIO — feature_name, benefits, max_egis (DaisyUI v5: <dialog>) */}
-      <dialog className="modal" open={!!detailItem}>
+      {/* MODAL DETTAGLIO — feature_name, benefits, max_egis (DaisyUI v5: showModal()) */}
+      <dialog ref={detailDialogRef} className="modal">
         <div className="modal-box max-w-lg">
           {detailItem && (
             <>
