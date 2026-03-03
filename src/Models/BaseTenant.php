@@ -21,8 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @date 2026-03-03
  * @purpose Base Eloquent model for tenant management across EGI-HUB ecosystem
  */
-class BaseTenant extends Model
-{
+class BaseTenant extends Model {
     use SoftDeletes;
 
     /**
@@ -75,16 +74,14 @@ class BaseTenant extends Model
     /**
      * Scope per filtrare i tenant attivi.
      */
-    public function scopeActive($query)
-    {
+    public function scopeActive($query) {
         return $query->where('status', self::STATUS_ACTIVE);
     }
 
     /**
      * Scope per filtrare i tenant in salute.
      */
-    public function scopeHealthy($query)
-    {
+    public function scopeHealthy($query) {
         return $query->where('is_healthy', true);
     }
 }
