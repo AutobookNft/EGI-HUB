@@ -41,6 +41,8 @@
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.2",
         "laravel/tinker": "^2.10.1",
+        "pragmarx/google2fa-laravel": "^2.2",
+        "bacon/bacon-qr-code": "^3.0",
         "spatie/laravel-permission": "*",
         "ultra/ultra-config-manager": "dev-main",
         "ultra/ultra-error-manager": "dev-main",
