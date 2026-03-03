@@ -55,7 +55,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.setItem(USER_KEY, JSON.stringify(fetchedUser));
         })
         .catch(() => {
-          // Token non valido, logout
+          // Non fare logout se l'utente sta completando la 2FA:
+          // il token '2fa:pending' è valido ma potrebbe generare errori
+          // su route che richiedono abilità complete prima della verifica.
+          if (window.location.pathname === '/2fa-challenge') {
+            return;
+          }
+          // Token non valido in tutti gli altri casi → logout
           logout();
         });
     }
