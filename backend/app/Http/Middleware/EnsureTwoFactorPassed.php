@@ -20,8 +20,16 @@ class EnsureTwoFactorPassed {
             return $next($request);
         }
 
-        // Se il token ha l'ability '2fa:pending', l'utente deve superare la 2FA
-        if ($user->currentAccessToken() && $user->currentAccessToken()->can('2fa:pending')) {
+        // Se il token ha l'ability '2fa:pending', l'utente deve superare la 2FA.
+        //
+        // ATTENZIONE: NON usare $token->can('2fa:pending') perché il metodo Sanctum
+        // restituisce TRUE anche per token con abilities ['*'] (wildcard = può tutto).
+        // Dobbiamo controllare l'array DIRETTAMENTE: il token è "pending" solo se
+        // contiene '2fa:pending' SENZA il wildcard '*'.
+        $tokenAbilities = (array) ($user->currentAccessToken()?->abilities ?? []);
+        $isPending = in_array('2fa:pending', $tokenAbilities) && !in_array('*', $tokenAbilities);
+
+        if ($isPending) {
 
             // Verifichiamo se l'utente HA GIÀ un secret confermato.
             // In caso contrario, deve configurarlo.
