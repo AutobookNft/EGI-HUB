@@ -28,7 +28,11 @@ import { getProjects, egiPurgeDryRun, egiPurgeExecute } from '../../services/pro
 import { useToast } from '../../contexts/ToastContext';
 import type { Project } from '../../types/project';
 
-const CONFIRM_TOKEN = 'PURGE ALL EGI';
+/* ─── genera token hex casuale monouso (es: a3f7-9c2b-e841-5d03) ─── */
+function generateToken(): string {
+  const hex = () => Math.floor(Math.random() * 0xffff).toString(16).padStart(4, '0');
+  return `${hex()}-${hex()}-${hex()}-${hex()}`;
+}
 
 /* ─── helper: estrae numeri dal dry-run output ─── */
 function parseStats(output: string) {
@@ -56,6 +60,9 @@ export default function ProjectMaintenance() {
   const [dryRunOutput, setDryRunOutput]      = useState<string | null>(null);
   const [dryRunSuccess, setDryRunSuccess]    = useState<boolean | null>(null);
   const [dryRunDone, setDryRunDone]          = useState(false);
+
+  // Token sicurezza monouso (generato al completamento dry-run)
+  const [confirmToken, setConfirmToken]      = useState('');
 
   // Execute state
   const [confirmInput, setConfirmInput]      = useState('');
@@ -100,12 +107,14 @@ export default function ProjectMaintenance() {
     setExecuteSuccess(null);
     setExecuteDone(false);
     setConfirmInput('');
+    setConfirmToken('');
     try {
       const result = await egiPurgeDryRun(project.id);
       setDryRunOutput(result.output);
       setDryRunSuccess(result.success);
       setDryRunDone(true);
       if (result.success) {
+        setConfirmToken(generateToken());
         toastSuccess('Dry-run completato. Verifica il piano prima di procedere.');
       } else {
         toastError('Dry-run fallito. Controlla l\'output per i dettagli.');
@@ -120,7 +129,7 @@ export default function ProjectMaintenance() {
   };
 
   const handleExecute = async () => {
-    if (!project || confirmInput !== CONFIRM_TOKEN) {
+    if (!project || confirmInput !== confirmToken) {
       setShakeTrigger(true);
       setTimeout(() => setShakeTrigger(false), 600);
       return;
@@ -148,7 +157,7 @@ export default function ProjectMaintenance() {
     }
   };
 
-  const isConfirmValid = confirmInput === CONFIRM_TOKEN;
+  const isConfirmValid = confirmToken !== '' && confirmInput === confirmToken;
   const stats          = dryRunOutput ? parseStats(dryRunOutput) : null;
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -462,32 +471,29 @@ export default function ProjectMaintenance() {
                   </p>
                 </div>
 
-                {/* token display */}
-                <div style={{ textAlign: 'center' }}>
-                  <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Codice di conferma — copia e incolla nel campo sotto:
-                  </p>
+                {/* token sicurezza monouso */}
+                <div style={{ background: '#1e1e1e', borderRadius: '8px', overflow: 'hidden', border: '1px solid #3f3f46' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', background: '#2d2d2d', borderBottom: '1px solid #3f3f46' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#71717a', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.08em' }}>token di sicurezza monouso</span>
+                    <button
+                      type="button"
+                      onClick={() => navigator.clipboard.writeText(confirmToken)}
+                      style={{ fontSize: '0.7rem', color: '#a1a1aa', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', borderRadius: '4px' }}
+                      title="Copia token"
+                    >
+                      copia
+                    </button>
+                  </div>
                   <div
-                    className="select-all cursor-text"
-                    style={{
-                      display: 'inline-block',
-                      padding: '10px 28px',
-                      borderRadius: '6px',
-                      fontFamily: 'monospace',
-                      fontWeight: 900,
-                      fontSize: '1.35rem',
-                      letterSpacing: '0.18em',
-                      color: '#ffffff',
-                      background: 'rgba(220,38,38,0.85)',
-                      border: '2px solid rgba(252,165,165,0.6)',
-                      boxShadow: '0 0 24px rgba(220,38,38,0.5), inset 0 1px 0 rgba(255,255,255,0.15)',
-                      textShadow: '0 1px 3px rgba(0,0,0,0.4)',
-                    }}
-                    title="Clicca per selezionare — poi incolla nel campo sotto"
+                    className="select-all"
+                    style={{ padding: '14px 20px', fontFamily: 'monospace', fontSize: '1.1rem', letterSpacing: '0.12em', color: '#e4e4e7', cursor: 'text', userSelect: 'all' }}
                   >
-                    {CONFIRM_TOKEN}
+                    {confirmToken}
                   </div>
                 </div>
+                <p style={{ fontSize: '0.78rem', color: '#6b7280', textAlign: 'center' }}>
+                  Copia il token e incollalo esattamente nel campo sottostante per sbloccare l'esecuzione.
+                </p>
 
                 {/* input */}
                 <div className="relative">
