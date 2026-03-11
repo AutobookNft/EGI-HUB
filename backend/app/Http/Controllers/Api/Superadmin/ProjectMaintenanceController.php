@@ -22,11 +22,8 @@ use Ultra\UltraLogManager\UltraLogManager;
  *                      token di conferma richiesto dalla UI nel body.
  */
 class ProjectMaintenanceController extends Controller {
-    /**
-     * Token che la UI DEVE inviare per autorizzare la purge reale.
-     * Non è un segreto crittografico — è uno speed-bump UX intenzionale.
-     */
-    public const PURGE_CONFIRM_TOKEN = 'PURGE ALL EGI';
+    // Nessun token hardcoded: la validazione è puramente frontend (speed-bump UX).
+    // La sicurezza reale è garantita dal middleware (auth + superadmin role).
 
     public function __construct(
         private readonly UltraLogManager $logger,
@@ -76,16 +73,9 @@ class ProjectMaintenanceController extends Controller {
      */
     public function egiPurgeExecute(Request $request, Project $project): JsonResponse {
         // ── Validazione token di conferma ──────────────────────────────────
-        $validated = $request->validate([
-            'confirm_token' => 'required|string',
+        $request->validate([
+            'confirm_token' => 'required|string|min:10',
         ]);
-
-        if ($validated['confirm_token'] !== self::PURGE_CONFIRM_TOKEN) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token di conferma non valido. Scrivi esattamente: ' . self::PURGE_CONFIRM_TOKEN,
-            ], 422);
-        }
 
         // ── Log operazione ad alto rischio ─────────────────────────────────
         $this->logger->warning('MAINTENANCE.EGI_PURGE_EXECUTE: initiated — IRREVERSIBLE', [

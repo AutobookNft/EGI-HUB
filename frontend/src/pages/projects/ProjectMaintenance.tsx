@@ -148,10 +148,12 @@ export default function ProjectMaintenance() {
       } else {
         toastError('Purge fallita parzialmente. Controlla l\'output.');
       }
-    } catch {
-      setExecuteOutput('Errore di connessione al server.');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+               ?? 'Errore di connessione al server.';
+      setExecuteOutput(msg);
       setExecuteSuccess(false);
-      toastError('Errore durante l\'esecuzione della purge.');
+      toastError(msg);
     } finally {
       setExecuteLoading(false);
     }
