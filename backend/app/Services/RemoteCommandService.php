@@ -29,9 +29,9 @@ class RemoteCommandService {
         'deploy_full'      => 'git pull && ([ -f composer.json ] && composer install --no-dev --optimize-autoloader || true) && ([ -f package.json ] && npm install && npm run build || true) && ([ -f artisan ] && php artisan migrate --force && php artisan config:cache && php artisan cache:clear && php artisan queue:restart || true)',
         // ── EGI Maintenance ──────────────────────────────────────────────────────
         // Dry-run: mostra cosa verrebbe eliminato (S3, Pinata, DB). Nessuna modifica.
-        'egi_purge_dryrun' => 'if [ -f artisan ]; then php8.3 artisan egi:purge-all 2>&1; else echo "SKIP: artisan non trovato in questa path"; fi',
+        'egi_purge_dryrun' => 'if [ -f artisan ]; then php8.3 artisan egi:purge-all 2>&1; else echo SKIP_NO_ARTISAN; fi',
         // Purge reale: --force bypassa la richiesta interattiva. La UI è la safety gate.
-        'egi_purge_force'  => 'if [ -f artisan ]; then php8.3 artisan egi:purge-all --force 2>&1; else echo "SKIP: artisan non trovato in questa path"; fi',
+        'egi_purge_force'  => 'if [ -f artisan ]; then php8.3 artisan egi:purge-all --force 2>&1; else echo SKIP_NO_ARTISAN; fi',
     ];
 
     private SsmClient $ssm;
