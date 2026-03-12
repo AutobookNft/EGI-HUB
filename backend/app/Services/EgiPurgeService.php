@@ -7,6 +7,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Ultra\ErrorManager\Interfaces\ErrorManagerInterface;
 use Ultra\UltraLogManager\UltraLogManager;
 
 /**
@@ -29,6 +30,7 @@ class EgiPurgeService
 
     public function __construct(
         private readonly UltraLogManager $logger,
+        private readonly ErrorManagerInterface $errorManager,
     ) {}
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -120,8 +122,8 @@ class EgiPurgeService
             } else {
                 $totalShared = collect($ipfsCidsToUnpin)->map(fn($ids) => count($ids))->sum();
                 $this->out("  Unique CIDs to unpin: " . count($ipfsCidsToUnpin) . " (from {$totalShared} EGI records)");
-                foreach ($ipfsCidsToUnpin as $cid => $egiIds) {
-                    $shared = count($egiIds) > 1 ? " ⚠️  shared by EGI IDs: " . implode(',', $egiIds) : '';
+                foreach ($ipfsCidsToUnpin as $cid => $cidShareIds) {
+                    $shared = count($cidShareIds) > 1 ? " ⚠️  shared by EGI IDs: " . implode(',', $cidShareIds) : '';
                     $this->out("  → {$cid}{$shared}");
                 }
             }
@@ -175,7 +177,7 @@ class EgiPurgeService
                 $ipfsUnpinned = 0;
                 $ipfsErrors   = 0;
 
-                foreach ($ipfsCidsToUnpin as $cid => $egiIds) {
+                foreach ($ipfsCidsToUnpin as $cid => $cidShareIds) {
                     try {
                         $response = Http::timeout(30)
                             ->withHeaders(['Authorization' => "Bearer {$jwt}"])
@@ -199,6 +201,13 @@ class EgiPurgeService
 
             // ── 6. EXECUTE — pulizia DB ──────────────────────────────────────
             $this->out('Cleaning DB records...');
+            $this->out("  IDs da eliminare: " . count($egiIds));
+
+            // Forza esplicitamente lo schema corretto per questa connessione
+            DB::statement('SET search_path TO core, public');
+
+            $preCount = DB::table('egis')->count();
+            $this->out("  Pre-delete count: {$preCount}");
 
             DB::transaction(function () use ($egiIds, &$traitDeleted, &$egiDeleted) {
                 // 6a. EgiTrait — elimina riga per riga per triggerare Spatie
@@ -209,12 +218,15 @@ class EgiPurgeService
                     $traitDeleted++;
                 }
 
-                // 6b. EGI hard-delete (include soft-deleted, ignora deleted_at)
-                $egiDeleted = DB::table('egis')->whereIn('id', $egiIds)->delete();
+                // 6b. EGI hard-delete con schema esplicito per evitare ambiguità search_path
+                $egiDeleted = DB::table('core.egis')->whereIn('id', $egiIds)->delete();
             });
+
+            $postCount = DB::table('egis')->count();
 
             $this->out("  ✓ EgiTrait deleted: {$traitDeleted}");
             $this->out("  ✓ EGI hard deleted: {$egiDeleted}");
+            $this->out("  Post-delete count: {$postCount}");
             $this->out('');
             $this->out('════════════════════════════════════════════════');
             $this->out('✅  PURGE COMPLETE');
@@ -233,7 +245,10 @@ class EgiPurgeService
         } catch (\Throwable $e) {
             $this->out('');
             $this->out("✗ FATAL ERROR: " . $e->getMessage());
-            $this->logger->error('EGI_PURGE_SERVICE: fatal error', ['error' => $e->getMessage()]);
+            $this->errorManager->handle('EGI_PURGE_FATAL', [
+                'error'   => $e->getMessage(),
+                'dry_run' => $dryRun,
+            ], $e);
             return $this->result(false);
         }
     }
