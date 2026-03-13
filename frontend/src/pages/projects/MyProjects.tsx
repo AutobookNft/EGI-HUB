@@ -62,7 +62,7 @@ export default function MyProjects() {
   };
 
   const enterProject = (project: MyProject) => {
-    navigate(`/projects/${project.slug}/dashboard`);
+    navigate(`/project/${project.slug}`);
   };
 
   if (loading) {

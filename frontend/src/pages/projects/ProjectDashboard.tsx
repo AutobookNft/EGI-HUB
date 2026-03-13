@@ -353,7 +353,7 @@ export default function ProjectDashboard() {
             <h2 className="card-title"><BarChart3 className="w-5 h-5" />Analytics</h2>
             <p className="text-base-content/70">Visualizza statistiche e metriche del progetto.</p>
             <div className="card-actions justify-end mt-4">
-              <Link to={`/projects/${slug}/analytics`} className="btn btn-outline btn-sm">Vedi Analytics</Link>
+              <Link to={`/project/${slug}/activity`} className="btn btn-outline btn-sm">Vedi Analytics</Link>
             </div>
           </div>
         </div>

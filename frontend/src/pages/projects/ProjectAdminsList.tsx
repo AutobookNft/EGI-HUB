@@ -139,7 +139,7 @@ export default function ProjectAdminsList() {
       <div className="flex items-center gap-2 text-sm breadcrumbs">
         <Link to="/my-projects" className="link link-hover">I Miei Progetti</Link>
         <span>/</span>
-        <Link to={`/projects/${slug}/dashboard`} className="link link-hover">{slug}</Link>
+        <Link to={`/project/${slug}`} className="link link-hover">{slug}</Link>
         <span>/</span>
         <span className="font-medium">Admins</span>
       </div>
@@ -157,7 +157,7 @@ export default function ProjectAdminsList() {
         </div>
 
         <Link 
-          to={`/projects/${slug}/admins/new`}
+          to={`/project/${slug}/admins`}
           className="btn btn-primary gap-2"
         >
           <UserPlus className="w-5 h-5" />
@@ -289,7 +289,7 @@ export default function ProjectAdminsList() {
                       <div className="flex gap-1">
                         {/* Edit */}
                         <Link 
-                          to={`/projects/${slug}/admins/${admin.id}/edit`}
+                          to={`/project/${slug}/admins`}
                           className="btn btn-ghost btn-xs"
                           title="Modifica"
                         >
