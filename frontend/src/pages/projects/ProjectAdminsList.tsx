@@ -466,8 +466,8 @@ export default function ProjectAdminsList() {
             </div>
           </form>
         </div>
-        <form method="dialog" className="modal-backdrop">
-          <button>close</button>
+        <form method="dialog" className="modal-backdrop bg-black/50">
+          <button className="opacity-0 cursor-default" aria-hidden="true">close</button>
         </form>
       </dialog>
     </div>
