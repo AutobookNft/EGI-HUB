@@ -31,3 +31,4 @@ backend/bootstrap/cache/
 # OS
 .DS_Store
 Thumbs.db
+.claude/plans/

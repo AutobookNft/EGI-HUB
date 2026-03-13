@@ -1,0 +1,27 @@
+{
+  "model": "claude-opus-4-6",
+  "planModeModel": "claude-opus-4-6",
+  "subagentModel": "claude-sonnet-4-6",
+  "permissions": {
+    "allow": [
+      "Bash(git status)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(grep*)",
+      "Bash(find*)",
+      "Bash(wc*)",
+      "Bash(php artisan*)",
+      "Bash(npm run build)",
+      "Bash(composer install)"
+    ],
+    "deny": [
+      "Bash(git push*)",
+      "Bash(rm -rf*)",
+      "Bash(sudo *)"
+    ]
+  },
+  "plansDirectory": ".claude/plans",
+  "enableAgentTeams": false,
+  "autoMemory": true,
+  "thinking": true
+}
