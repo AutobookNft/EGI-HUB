@@ -83,7 +83,7 @@ return [
             ]) : [],
         ],
 
-        // Primary connection (AWS RDS - hub,core,public schemas)
+        // Primary connection (AWS RDS - schema core only)
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),
@@ -95,7 +95,7 @@ return [
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-            'search_path' => env('DB_SEARCH_PATH', 'hub,core,public'),
+            'search_path' => env('DB_SEARCH_PATH', 'core,public'),
             'sslmode' => 'require',
         ],
 

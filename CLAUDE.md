@@ -104,8 +104,8 @@ PostgreSQL AWS RDS — Schema core ESCLUSIVAMENTE:
 │   │       ├── TenantService.php    [LEGACY] 593 righe — non toccare senza piano
 │   │       └── ProjectService.php   [LEGACY] 530 righe — non toccare senza piano
 │   ├── config/
-│   │   └── database.php             → default: hub,core,public | .env override: core,public
-│   └── .env                         → DB_SEARCH_PATH=core,public [VERIFICATO]
+│   │   └── database.php             → search_path: core,public [VERIFICATO + CORRETTO 2026-03-13]
+│   └── .env                         → DB_SEARCH_PATH=core,public [VERIFICATO prod + dev]
 ├── src/                             → Package FlorenceEgi\Hub
 │   ├── Models/
 │   │   ├── Aggregation.php          [VERIFICATO]
@@ -128,10 +128,6 @@ PostgreSQL AWS RDS — Schema core ESCLUSIVAMENTE:
 [DEBITO]  backend/app/Models/UserOrganizationData.php usa "Organization"
           → Terminologia inconsistente (OSZ usa "Tenant") — P2
           → Rinominare quando si tocca questa area
-
-[DEBITO]  database.php default search_path = hub,core,public
-          → .env imposta correttamente core,public
-          → Allineare il default in database.php a core,public
 
 [DEBITO]  Censimento modelli vs tabelle core — da approfondire
           Confermati in core: AiFeature → ai_feature_pricing,
