@@ -38,7 +38,8 @@ import {
   FolderOpen,
   ArrowLeft,
   Home,
-  Server
+  Server,
+  KeyRound
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useProject } from '../contexts/ProjectContext';
@@ -94,6 +95,14 @@ const globalMenuGroups: MenuGroup[] = [
     items: [
       { name: 'Egili Management', path: '/tokenomics/egili', icon: <Coins className="w-4 h-4" /> },
       { name: 'Equilibrium', path: '/tokenomics/equilibrium', icon: <Scale className="w-4 h-4" /> },
+    ],
+  },
+  {
+    name: 'Provisioning',
+    icon: <KeyRound className="w-5 h-5" />,
+    items: [
+      { name: 'Tenant Admin Bootstraps', path: '/admin/bootstraps', icon: <KeyRound className="w-4 h-4" /> },
+      { name: 'Nuovo Bootstrap', path: '/admin/bootstraps/new', icon: <UserPlus className="w-4 h-4" /> },
     ],
   },
   {
