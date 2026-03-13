@@ -79,7 +79,37 @@ export interface ProjectWithHealth {
 }
 
 // ==========================================
-// Project Admin Types
+// Project Users Types (shared users table)
+// ==========================================
+
+export interface ProjectUserTenant {
+  id: number;
+  name: string;
+  slug: string;
+  entity_type: string | null;
+}
+
+export interface ProjectUser {
+  id: number;
+  name: string;
+  email: string;
+  usertype: string | null;
+  platform_role: string | null;
+  is_super_admin: boolean;
+  status: string | null;
+  last_active_at: string | null;
+  tenant: ProjectUserTenant | null;
+}
+
+export interface ProjectUsersMeta {
+  total: number;
+  admins: number;
+  by_usertype: Record<string, number>;
+  by_tenant: Record<string, number>;
+}
+
+// ==========================================
+// Project Admin Types (legacy — project_admins table)
 // ==========================================
 
 export type ProjectAdminRole = 'owner' | 'admin' | 'viewer';

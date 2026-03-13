@@ -23,7 +23,7 @@ use App\Http\Controllers\Api\AggregationController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ProjectProxyController;
 use App\Http\Controllers\Api\ProjectActivityController;
-use App\Http\Controllers\Api\ProjectAdminController;
+use App\Http\Controllers\Api\ProjectUsersController;
 
 // Legacy aliases (deprecated, use projects instead)
 use App\Http\Controllers\Api\TenantController;
@@ -345,14 +345,8 @@ Route::middleware(['auth:sanctum', 'ensure.2fa', 'super.admin'])->group(function
         // Project activities
         Route::get('{project}/activities', [ProjectActivityController::class, 'forProject'])->name('activities');
 
-        // Project Admins management
-        Route::get('{slug}/admins', [ProjectAdminController::class, 'index'])->name('admins.index');
-        Route::post('{slug}/admins', [ProjectAdminController::class, 'store'])->name('admins.store');
-        Route::get('{slug}/admins/{adminId}', [ProjectAdminController::class, 'show'])->name('admins.show');
-        Route::put('{slug}/admins/{adminId}', [ProjectAdminController::class, 'update'])->name('admins.update');
-        Route::delete('{slug}/admins/{adminId}', [ProjectAdminController::class, 'destroy'])->name('admins.destroy');
-        Route::post('{slug}/admins/{adminId}/suspend', [ProjectAdminController::class, 'suspend'])->name('admins.suspend');
-        Route::post('{slug}/admins/{adminId}/reactivate', [ProjectAdminController::class, 'reactivate'])->name('admins.reactivate');
+        // Project Users — lista utenti dal DB condiviso (system_project_id)
+        Route::get('{slug}/admins', [ProjectUsersController::class, 'index'])->name('admins.index');
 
         // Tenants within a project
         Route::get('{slug}/tenants', [ProjectController::class, 'tenants'])->name('tenants.index');

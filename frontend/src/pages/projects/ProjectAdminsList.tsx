@@ -1,164 +1,95 @@
 /**
- * Project Admins List
- * 
- * Manage users who have access to a specific project.
- * Only Project Owners can add/modify/remove admins.
+ * Project Users List
+ *
+ * Mostra gli utenti del progetto dalla tabella users condivisa,
+ * filtrati per system_project_id e raggruppati per tenant.
  */
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-  UserPlus,
+  Users,
   ShieldCheck,
-  Star,
-  Eye,
-  Trash2,
-  Pause,
-  Play,
-  Clock,
-  CheckCircle,
+  Building2,
   AlertCircle,
-  X
+  CheckCircle,
+  Crown,
+  User,
 } from 'lucide-react';
-import {
-  getProjectAdmins,
-  createProjectAdmin,
-  deleteProjectAdmin,
-  suspendProjectAdmin,
-  reactivateProjectAdmin
-} from '../../services/projectApi';
-import type { ProjectAdmin, ProjectAdminRole, ProjectAdminsMeta } from '../../types/project';
+import { getProjectUsers } from '../../services/projectApi';
+import type { ProjectUser, ProjectUsersMeta } from '../../types/project';
 
-const roleIcons: Record<ProjectAdminRole, React.ReactNode> = {
-  owner: <Star className="w-4 h-4" />,
-  admin: <ShieldCheck className="w-4 h-4" />,
-  viewer: <Eye className="w-4 h-4" />,
+const usertypeLabel: Record<string, string> = {
+  pa_entity_admin: 'Admin PA',
+  pa_entity:       'Utente PA',
+  creator:         'Creator',
+  admin:           'Admin',
+  user:            'Utente',
 };
 
-const roleBadgeColors: Record<ProjectAdminRole, string> = {
-  owner: 'badge-primary',
-  admin: 'badge-success',
-  viewer: 'badge-info',
+const usertypeBadge: Record<string, string> = {
+  pa_entity_admin: 'bg-blue-100 text-blue-800',
+  pa_entity:       'bg-gray-100 text-gray-700',
+  creator:         'bg-purple-100 text-purple-800',
+  admin:           'bg-green-100 text-green-800',
+  user:            'bg-gray-100 text-gray-600',
 };
+
+function UserTypeIcon({ usertype }: { usertype: string | null }) {
+  if (usertype === 'pa_entity_admin' || usertype === 'admin') {
+    return <Crown className="w-4 h-4 inline mr-1" />;
+  }
+  if (usertype === 'creator') {
+    return <ShieldCheck className="w-4 h-4 inline mr-1" />;
+  }
+  return <User className="w-4 h-4 inline mr-1" />;
+}
 
 export default function ProjectAdminsList() {
   const { slug } = useParams<{ slug: string }>();
 
-  const [admins, setAdmins] = useState<ProjectAdmin[]>([]);
-  const [meta, setMeta] = useState<ProjectAdminsMeta | null>(null);
+  const [users, setUsers] = useState<ProjectUser[]>([]);
+  const [meta, setMeta] = useState<ProjectUsersMeta | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<number | null>(null);
-
-  // Modal state
-  const [showModal, setShowModal] = useState(false);
-  const [modalEmail, setModalEmail] = useState('');
-  const [modalRole, setModalRole] = useState<ProjectAdminRole>('viewer');
-  const [modalLoading, setModalLoading] = useState(false);
-  const [modalError, setModalError] = useState<string | null>(null);
-
-  const openModal = () => {
-    setModalEmail('');
-    setModalRole('viewer');
-    setModalError(null);
-    setShowModal(true);
-  };
-
-  const closeModal = () => setShowModal(false);
-
-  const handleAddAdmin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!slug || !modalEmail.trim()) return;
-
-    try {
-      setModalLoading(true);
-      setModalError(null);
-      await createProjectAdmin(slug, { email: modalEmail.trim(), role: modalRole });
-      closeModal();
-      await loadAdmins();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Errore durante l\'aggiunta dell\'admin';
-      setModalError(msg);
-    } finally {
-      setModalLoading(false);
-    }
-  };
 
   useEffect(() => {
-    if (slug) {
-      loadAdmins();
-    }
+    if (slug) loadUsers();
   }, [slug]);
 
-  const loadAdmins = async () => {
+  const loadUsers = async () => {
     if (!slug) return;
-    
     try {
       setLoading(true);
-      const response = await getProjectAdmins(slug);
-      setAdmins(response.data);
+      const response = await getProjectUsers(slug);
+      setUsers(response.data);
       setMeta(response.meta);
       setError(null);
     } catch (err) {
-      setError('Impossibile caricare gli admin del progetto');
-      console.error('Error loading project admins:', err);
+      setError('Impossibile caricare gli utenti del progetto');
+      console.error('Error loading project users:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSuspend = async (admin: ProjectAdmin) => {
-    if (!slug) return;
-    
-    const reason = prompt('Motivo della sospensione (opzionale):');
-    if (reason === null) return; // Cancelled
-    
-    try {
-      setActionLoading(admin.id);
-      await suspendProjectAdmin(slug, admin.id, reason || undefined);
-      await loadAdmins();
-    } catch (err) {
-      console.error('Error suspending admin:', err);
-      alert('Impossibile sospendere l\'admin');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleReactivate = async (admin: ProjectAdmin) => {
-    if (!slug) return;
-    
-    try {
-      setActionLoading(admin.id);
-      await reactivateProjectAdmin(slug, admin.id);
-      await loadAdmins();
-    } catch (err) {
-      console.error('Error reactivating admin:', err);
-      alert('Impossibile riattivare l\'admin');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleDelete = async (admin: ProjectAdmin) => {
-    if (!slug) return;
-    
-    if (!confirm(`Sei sicuro di voler rimuovere ${admin.user.name} dal progetto?`)) {
-      return;
-    }
-    
-    try {
-      setActionLoading(admin.id);
-      await deleteProjectAdmin(slug, admin.id);
-      await loadAdmins();
-    } catch (err: unknown) {
-      console.error('Error deleting admin:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Impossibile rimuovere l\'admin';
-      alert(errorMessage);
-    } finally {
-      setActionLoading(null);
-    }
-  };
+  // Raggruppa per tenant
+  const byTenant = users.reduce<Record<string, { tenantName: string; tenantSlug: string; entityType: string | null; users: ProjectUser[] }>>(
+    (acc, u) => {
+      const key = u.tenant ? String(u.tenant.id) : 'no_tenant';
+      if (!acc[key]) {
+        acc[key] = {
+          tenantName: u.tenant?.name ?? 'Senza tenant',
+          tenantSlug: u.tenant?.slug ?? '',
+          entityType: u.tenant?.entity_type ?? null,
+          users: [],
+        };
+      }
+      acc[key].users.push(u);
+      return acc;
+    },
+    {}
+  );
 
   if (loading) {
     return (
@@ -176,44 +107,41 @@ export default function ProjectAdminsList() {
         <span>/</span>
         <Link to={`/project/${slug}`} className="link link-hover">{slug}</Link>
         <span>/</span>
-        <span className="font-medium">Admins</span>
+        <span className="font-medium">Utenti</span>
       </div>
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <ShieldCheck className="w-7 h-7" />
-            Project Admins
+            <Users className="w-7 h-7" />
+            Utenti del Progetto
           </h1>
           <p className="text-base-content/70 mt-1">
-            Gestisci chi ha accesso a questo progetto
+            Utenti registrati su questo progetto, raggruppati per tenant
           </p>
         </div>
-
-        <button
-          className="btn btn-primary gap-2"
-          onClick={openModal}
-        >
-          <UserPlus className="w-5 h-5" />
-          Aggiungi Admin
-        </button>
       </div>
 
       {/* Stats */}
       {meta && (
-        <div className="grid grid-cols-4 gap-4">
-          {[
-            { label: 'Totale', value: meta.total, color: 'text-gray-800' },
-            { label: 'Owner', value: meta.owners, color: 'text-blue-600' },
-            { label: 'Admin', value: meta.admins, color: 'text-green-600' },
-            { label: 'Viewer', value: meta.viewers, color: 'text-sky-600' },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="bg-white rounded-xl shadow p-4 text-center border border-gray-100">
-              <div className="text-sm text-gray-500 mb-1">{label}</div>
-              <div className={`text-3xl font-bold ${color}`}>{value}</div>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl shadow p-4 text-center border border-gray-100">
+            <div className="text-sm text-gray-500 mb-1">Totale utenti</div>
+            <div className="text-3xl font-bold text-gray-800">{meta.total}</div>
+          </div>
+          <div className="bg-white rounded-xl shadow p-4 text-center border border-gray-100">
+            <div className="text-sm text-gray-500 mb-1">Admin</div>
+            <div className="text-3xl font-bold text-blue-600">{meta.admins}</div>
+          </div>
+          <div className="bg-white rounded-xl shadow p-4 text-center border border-gray-100">
+            <div className="text-sm text-gray-500 mb-1">Tenant</div>
+            <div className="text-3xl font-bold text-green-600">{Object.keys(byTenant).length}</div>
+          </div>
+          <div className="bg-white rounded-xl shadow p-4 text-center border border-gray-100">
+            <div className="text-sm text-gray-500 mb-1">Tipi utente</div>
+            <div className="text-3xl font-bold text-purple-600">{Object.keys(meta.by_usertype).length}</div>
+          </div>
         </div>
       )}
 
@@ -222,256 +150,89 @@ export default function ProjectAdminsList() {
         <div className="alert alert-error">
           <AlertCircle className="w-6 h-6" />
           <span>{error}</span>
-          <button className="btn btn-sm" onClick={loadAdmins}>Riprova</button>
+          <button className="btn btn-sm" onClick={loadUsers}>Riprova</button>
         </div>
       )}
 
-      {/* Admins Table */}
-      <div className="card bg-base-100 shadow-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="table table-zebra">
-            <thead>
-              <tr>
-                <th>Utente</th>
-                <th>Ruolo</th>
-                <th>Stato</th>
-                <th>Assegnato da</th>
-                <th>Scadenza</th>
-                <th>Azioni</th>
-              </tr>
-            </thead>
-            <tbody>
-              {admins.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-8 text-base-content/60">
-                    Nessun admin assegnato a questo progetto
-                  </td>
-                </tr>
-              ) : (
-                admins.map((admin) => (
-                  <tr key={admin.id} className={!admin.is_valid ? 'opacity-50' : ''}>
-                    {/* User */}
-                    <td>
-                      <div>
-                        <div className="font-medium">{admin.user.name}</div>
-                        <div className="text-sm text-base-content/60">{admin.user.email}</div>
-                      </div>
-                    </td>
-                    
-                    {/* Role */}
-                    <td>
-                      <div className={`badge ${roleBadgeColors[admin.role]} gap-1`}>
-                        {roleIcons[admin.role]}
-                        {admin.role_label}
-                      </div>
-                    </td>
-                    
-                    {/* Status */}
-                    <td>
-                      {admin.is_valid ? (
-                        <div className="badge badge-success gap-1">
-                          <CheckCircle className="w-3 h-3" />
-                          Attivo
-                        </div>
-                      ) : admin.is_active ? (
-                        <div className="badge badge-warning gap-1">
-                          <Clock className="w-3 h-3" />
-                          Scaduto
-                        </div>
-                      ) : (
-                        <div className="badge badge-error gap-1">
-                          <Pause className="w-3 h-3" />
-                          Sospeso
-                        </div>
-                      )}
-                    </td>
-                    
-                    {/* Assigned by */}
-                    <td>
-                      {admin.assigned_by ? (
-                        <div className="text-sm">
-                          {admin.assigned_by.name}
-                          <br />
-                          <span className="text-base-content/60">
-                            {admin.assigned_at && new Date(admin.assigned_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-base-content/40">—</span>
-                      )}
-                    </td>
-                    
-                    {/* Expiration */}
-                    <td>
-                      {admin.expires_at ? (
-                        <div className="text-sm">
-                          <div className={new Date(admin.expires_at) < new Date() ? 'text-error' : ''}>
-                            {new Date(admin.expires_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="badge badge-ghost">Mai</span>
-                      )}
-                    </td>
-                    
-                    {/* Actions */}
-                    <td>
-                      <div className="flex gap-1">
-                        {/* Suspend/Reactivate */}
-                        {admin.is_active ? (
-                          <button 
-                            className="btn btn-ghost btn-xs text-warning"
-                            onClick={() => handleSuspend(admin)}
-                            disabled={actionLoading === admin.id}
-                            title="Sospendi"
-                          >
-                            {actionLoading === admin.id ? (
-                              <span className="loading loading-spinner loading-xs"></span>
-                            ) : (
-                              <Pause className="w-4 h-4" />
-                            )}
-                          </button>
-                        ) : (
-                          <button 
-                            className="btn btn-ghost btn-xs text-success"
-                            onClick={() => handleReactivate(admin)}
-                            disabled={actionLoading === admin.id}
-                            title="Riattiva"
-                          >
-                            {actionLoading === admin.id ? (
-                              <span className="loading loading-spinner loading-xs"></span>
-                            ) : (
-                              <Play className="w-4 h-4" />
-                            )}
-                          </button>
-                        )}
-                        
-                        {/* Delete */}
-                        <button 
-                          className="btn btn-ghost btn-xs text-error"
-                          onClick={() => handleDelete(admin)}
-                          disabled={actionLoading === admin.id}
-                          title="Rimuovi"
-                        >
-                          {actionLoading === admin.id ? (
-                            <span className="loading loading-spinner loading-xs"></span>
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {/* Utenti per tenant */}
+      {Object.keys(byTenant).length === 0 ? (
+        <div className="bg-white rounded-xl shadow p-8 text-center text-gray-400 border border-gray-100">
+          Nessun utente trovato per questo progetto
         </div>
-      </div>
-
-      {/* Info */}
-      <div className="alert alert-info">
-        <ShieldCheck className="w-6 h-6" />
-        <div>
-          <h4 className="font-bold">Gerarchia dei Ruoli</h4>
-          <ul className="text-sm mt-1 space-y-1">
-            <li><strong>Owner:</strong> Accesso completo, può gestire altri admin</li>
-            <li><strong>Admin:</strong> Può gestire tenant e configurazioni</li>
-            <li><strong>Viewer:</strong> Solo visualizzazione</li>
-          </ul>
-        </div>
-      </div>
-
-      {/* Add Admin Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/60"
-            onClick={closeModal}
-          />
-          {/* Box */}
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 z-10">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-primary" />
-                Aggiungi Admin al Progetto
-              </h3>
-              <button
-                className="btn btn-ghost btn-sm btn-circle"
-                onClick={closeModal}
-                aria-label="Chiudi"
-              >
-                <X className="w-4 h-4" />
-              </button>
+      ) : (
+        Object.entries(byTenant).map(([key, group]) => (
+          <div key={key} className="bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
+            {/* Tenant header */}
+            <div className="flex items-center gap-3 px-5 py-3 bg-gray-50 border-b border-gray-100">
+              <Building2 className="w-5 h-5 text-gray-400" />
+              <div>
+                <span className="font-semibold text-gray-800">{group.tenantName}</span>
+                {group.entityType && (
+                  <span className="ml-2 text-xs text-gray-500 uppercase tracking-wide">{group.entityType}</span>
+                )}
+              </div>
+              <span className="ml-auto text-sm text-gray-400">{group.users.length} utenti</span>
             </div>
 
-            <form onSubmit={handleAddAdmin} className="space-y-4">
-              <div className="form-control">
-                <label className="label pb-1">
-                  <span className="label-text font-medium">Email utente *</span>
-                </label>
-                <input
-                  type="email"
-                  className="input input-bordered w-full"
-                  placeholder="utente@esempio.com"
-                  value={modalEmail}
-                  onChange={(e) => setModalEmail(e.target.value)}
-                  required
-                  autoFocus
-                />
-                <p className="text-xs text-base-content/50 mt-1">
-                  L'utente deve essere già registrato in EGI-HUB
-                </p>
-              </div>
-
-              <div className="form-control">
-                <label className="label pb-1">
-                  <span className="label-text font-medium">Ruolo</span>
-                </label>
-                <select
-                  className="select select-bordered w-full"
-                  value={modalRole}
-                  onChange={(e) => setModalRole(e.target.value as ProjectAdminRole)}
-                >
-                  <option value="viewer">Viewer — Solo visualizzazione</option>
-                  <option value="admin">Admin — Gestione tenant e configurazioni</option>
-                  <option value="owner">Owner — Accesso completo</option>
-                </select>
-              </div>
-
-              {modalError && (
-                <div className="alert alert-error py-2 text-sm">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{modalError}</span>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={closeModal}
-                  disabled={modalLoading}
-                >
-                  Annulla
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary gap-2"
-                  disabled={modalLoading || !modalEmail.trim()}
-                >
-                  {modalLoading
-                    ? <span className="loading loading-spinner loading-sm" />
-                    : <UserPlus className="w-4 h-4" />
-                  }
-                  Aggiungi
-                </button>
-              </div>
-            </form>
+            {/* Tabella utenti */}
+            <div className="overflow-x-auto">
+              <table className="table table-zebra w-full">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Tipo</th>
+                    <th>Ruolo piattaforma</th>
+                    <th>Stato</th>
+                    <th>Ultima attività</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {group.users.map((u) => (
+                    <tr key={u.id}>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{u.name || '—'}</span>
+                          {u.is_super_admin && (
+                            <span className="badge badge-warning badge-sm">Super Admin</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="text-sm text-gray-600">{u.email}</td>
+                      <td>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${usertypeBadge[u.usertype ?? ''] ?? 'bg-gray-100 text-gray-600'}`}>
+                          <UserTypeIcon usertype={u.usertype} />
+                          {usertypeLabel[u.usertype ?? ''] ?? u.usertype ?? '—'}
+                        </span>
+                      </td>
+                      <td>
+                        {u.platform_role ? (
+                          <span className="badge badge-outline badge-sm">{u.platform_role}</span>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
+                      <td>
+                        {u.status === 'active' || u.status === null ? (
+                          <span className="flex items-center gap-1 text-green-600 text-sm">
+                            <CheckCircle className="w-3.5 h-3.5" /> Attivo
+                          </span>
+                        ) : (
+                          <span className="badge badge-error badge-sm">{u.status}</span>
+                        )}
+                      </td>
+                      <td className="text-sm text-gray-400">
+                        {u.last_active_at
+                          ? new Date(u.last_active_at).toLocaleDateString('it-IT')
+                          : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        ))
       )}
     </div>
   );

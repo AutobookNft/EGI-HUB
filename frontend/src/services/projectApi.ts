@@ -20,7 +20,9 @@ import type {
   ProjectAdminsMeta,
   CreateProjectAdminData,
   UpdateProjectAdminData,
-  MyProject
+  MyProject,
+  ProjectUser,
+  ProjectUsersMeta,
 } from '../types/project';
 
 export interface ProjectTenant {
@@ -292,7 +294,24 @@ export async function getMyProjects(): Promise<{ data: MyProject[]; is_super_adm
 }
 
 /**
- * Get all admins for a project
+ * Get users of a project (from shared users table, filtered by system_project_id)
+ */
+export async function getProjectUsers(slug: string): Promise<{
+  data: ProjectUser[];
+  meta: ProjectUsersMeta;
+}> {
+  const response = await api.get<ApiResponse<ProjectUser[]> & { meta: ProjectUsersMeta }>(
+    `/projects/${slug}/admins`
+  );
+  return {
+    data: response.data.data,
+    meta: response.data.meta,
+  };
+}
+
+/**
+ * Get all admins for a project (legacy — project_admins table)
+ * @deprecated Use getProjectUsers instead
  */
 export async function getProjectAdmins(slug: string): Promise<{
   data: ProjectAdmin[];
