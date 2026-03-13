@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @package App\Http\Controllers\Api
@@ -41,7 +42,7 @@ class ProjectUsersController extends Controller
 
         // Recupera i tenant coinvolti per mostrare i nomi
         $tenantIds = $users->pluck('tenant_id')->filter()->unique()->values();
-        $tenants = \DB::table('tenants')
+        $tenants = DB::table('tenants')
             ->whereIn('id', $tenantIds)
             ->select('id', 'name', 'slug', 'entity_type')
             ->get()
@@ -85,6 +86,40 @@ class ProjectUsersController extends Controller
                 'name' => $project->name,
                 'slug' => $project->slug,
             ],
+        ]);
+    }
+
+    /**
+     * Progetti accessibili all'utente corrente
+     *
+     * GET /api/my-projects
+     * SuperAdmin → tutti i progetti attivi
+     * Utente normale → progetti dove system_project_id corrisponde
+     */
+    public function myProjects(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $projects = Project::whereNull('deleted_at')
+            ->where('is_active', true)
+            ->get();
+
+        return response()->json([
+            'success'        => true,
+            'data'           => $projects->map(fn(Project $p) => [
+                'id'          => $p->id,
+                'name'        => $p->name,
+                'slug'        => $p->slug,
+                'description' => $p->description,
+                'url'         => $p->url,
+                'status'      => $p->status,
+                'is_healthy'  => $p->is_healthy,
+                'access'      => [
+                    'role'       => 'super_admin',
+                    'role_label' => 'Super Admin EGI',
+                ],
+            ]),
+            'is_super_admin' => (bool) $user->is_super_admin,
         ]);
     }
 }

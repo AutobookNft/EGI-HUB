@@ -383,7 +383,7 @@ Route::middleware(['auth:sanctum', 'ensure.2fa', 'super.admin'])->group(function
     | My Projects API (User's accessible projects)
     |--------------------------------------------------------------------------
     */
-        Route::get('my-projects', [ProjectAdminController::class, 'myProjects'])->name('my-projects');
+        Route::get('my-projects', [ProjectUsersController::class, 'myProjects'])->name('my-projects');
     });
 
     /*
