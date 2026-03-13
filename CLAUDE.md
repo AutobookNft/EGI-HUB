@@ -262,6 +262,7 @@ git status && git branch
 | Enforcement Claude | `EGI-DOC/docs/oracode/audit/06_CLAUDE_CODE_ENFORCEMENT.md` |
 | Trigger Matrix completa | `EGI-DOC/docs/oracode/audit/02_TRIGGER_MATRIX.md` |
 | Report audit | `EGI-DOC/docs/oracode/audit/reports/` |
+| **AWS Infrastructure** | `EGI-DOC/docs/egi-hub/AWS_INFRASTRUCTURE.md` |
 
 ---
 
