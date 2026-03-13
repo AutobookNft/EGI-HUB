@@ -2,16 +2,32 @@
   "model": "claude-opus-4-6",
   "planModeModel": "claude-opus-4-6",
   "subagentModel": "claude-sonnet-4-6",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash(git commit*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '' && echo '⚠️  P0-11 DOC-SYNC — TASK NON CHIUSA' && echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━' && echo 'Commit EGI-HUB eseguito.' && echo 'Se modifica Tipo 2+ (comportamento / arch / config / feat):' && echo '  1. Aggiorna /home/fabio/EGI-DOC/docs/egi-hub/' && echo '  2. Commit EGI-DOC con [DOC]' && echo '  Solo allora la task e chiusa (P0-11).' && echo 'Tipo 1 (refactoring interno puro): puoi chiudere.' && echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━' && echo ''"
+          }
+        ]
+      }
+    ]
+  },
   "permissions": {
     "allow": [
       "Bash(git status)",
       "Bash(git log*)",
       "Bash(git diff*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
       "Bash(grep*)",
       "Bash(find*)",
       "Bash(wc*)",
       "Bash(php artisan*)",
       "Bash(npm run build)",
+      "Bash(npm run dev)",
       "Bash(composer install)"
     ],
     "deny": [
