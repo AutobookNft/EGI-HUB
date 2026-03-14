@@ -117,7 +117,8 @@
                 Per attivare il suo account e impostare la password, faccia clic sul pulsante seguente:
             </p>
 
-            <a href="{{ $activationUrl }}" class="cta-button">
+            <a href="{{ $activationUrl }}"
+               style="display:inline-block;background-color:#4f46e5;color:#ffffff!important;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:16px;font-weight:600;margin:8px 0 24px;">
                 Attiva il mio account
             </a>
 
