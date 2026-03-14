@@ -18,6 +18,7 @@ import {
   Mail,
   Clock,
   RefreshCw,
+  ExternalLink,
 } from 'lucide-react';
 import { getProjectUsers, resendBootstrapInvite } from '../../services/projectApi';
 import type { ProjectUser, ProjectUsersMeta, PendingBootstrap } from '../../types/project';
@@ -271,24 +272,33 @@ export default function ProjectAdminsList() {
                             ) : '—'}
                           </td>
                           <td>
-                            {b.can_resend && (
-                              <button
-                                className="btn btn-xs btn-outline btn-warning gap-1"
-                                disabled={resendingId === b.id}
-                                onClick={() => handleResend(b)}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {b.can_resend && (
+                                <button
+                                  className="btn btn-xs btn-outline btn-warning gap-1"
+                                  disabled={resendingId === b.id}
+                                  onClick={() => handleResend(b)}
+                                >
+                                  {resendingId === b.id
+                                    ? <span className="loading loading-spinner loading-xs"></span>
+                                    : <RefreshCw className="w-3 h-3" />
+                                  }
+                                  Reinvia
+                                </button>
+                              )}
+                              <Link
+                                to={`/project/${slug}/bootstrap/${b.id}`}
+                                className="btn btn-xs btn-ghost gap-1"
                               >
-                                {resendingId === b.id
-                                  ? <span className="loading loading-spinner loading-xs"></span>
-                                  : <RefreshCw className="w-3 h-3" />
-                                }
-                                Reinvia
-                              </button>
-                            )}
-                            {resendMsg?.id === b.id && (
-                              <span className={`ml-2 text-xs ${resendMsg.ok ? 'text-green-600' : 'text-red-500'}`}>
-                                {resendMsg.text}
-                              </span>
-                            )}
+                                <ExternalLink className="w-3 h-3" />
+                                Dettaglio
+                              </Link>
+                              {resendMsg?.id === b.id && (
+                                <span className={`text-xs ${resendMsg.ok ? 'text-green-600' : 'text-red-500'}`}>
+                                  {resendMsg.text}
+                                </span>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}

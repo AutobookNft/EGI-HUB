@@ -59,9 +59,7 @@ import ProjectCreateAdminBootstrap from './pages/projects/ProjectCreateAdminBoot
 
 import TwoFactorChallenge from './pages/auth/2fa/TwoFactorChallenge'
 
-// Bootstrap Management
-import BootstrapsList from './pages/bootstraps/BootstrapsList'
-import CreateBootstrap from './pages/bootstraps/CreateBootstrap'
+// Bootstrap Detail (project-scoped)
 import BootstrapDetail from './pages/bootstraps/BootstrapDetail'
 
 // Public Activation
@@ -179,10 +177,6 @@ function AppRoutes() {
         <Route path="padmin/search" element={<PadminSearch />} />
         <Route path="padmin/statistics" element={<PadminStatistics />} />
         
-        {/* Bootstrap Management (SuperAdmin only) */}
-        <Route path="admin/bootstraps" element={<BootstrapsList />} />
-        <Route path="admin/bootstraps/new" element={<CreateBootstrap />} />
-        <Route path="admin/bootstraps/:id" element={<BootstrapDetail />} />
 
         {/* Global Project Management (SuperAdmin only) */}
         <Route path="projects" element={<ProjectsList />} />
@@ -219,6 +213,7 @@ function AppRoutes() {
         
         {/* Project Admin */}
         <Route path="project/:slug/admins" element={<ProjectAdminsList />} />
+        <Route path="project/:slug/bootstrap/:id" element={<BootstrapDetail />} />
         <Route path="project/:slug/permissions" element={<ComingSoon title="Permessi" />} />
         <Route path="project/:slug/maintenance" element={<ProjectMaintenance />} />
         

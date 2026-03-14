@@ -90,8 +90,9 @@ function formatDate(dateStr: string | null | undefined): string | null {
 type PendingAction = 'suspend' | 'revoke';
 
 export default function BootstrapDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id, slug } = useParams<{ id: string; slug: string }>();
   const navigate = useNavigate();
+  const backPath = slug ? `/project/${slug}/admins` : '/projects';
 
   const [bootstrap, setBootstrap] = useState<TenantAdminBootstrap | null>(null);
   const [loading, setLoading] = useState(true);
@@ -175,7 +176,7 @@ export default function BootstrapDetail() {
         <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={() => navigate('/admin/bootstraps')}
+            onClick={() => navigate(backPath)}
             className="btn btn-ghost btn-square"
             aria-label="Torna alla lista"
           >
@@ -187,7 +188,7 @@ export default function BootstrapDetail() {
           <AlertTriangle className="w-5 h-5" aria-hidden="true" />
           <span>{error ?? 'Bootstrap non trovato'}</span>
         </div>
-        <Link to="/admin/bootstraps" className="btn btn-ghost gap-2">
+        <Link to={backPath} className="btn btn-ghost gap-2">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           Torna alla lista
         </Link>
@@ -218,7 +219,7 @@ export default function BootstrapDetail() {
         <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={() => navigate('/admin/bootstraps')}
+            onClick={() => navigate(backPath)}
             className="btn btn-ghost btn-square"
             aria-label="Torna alla lista"
           >
