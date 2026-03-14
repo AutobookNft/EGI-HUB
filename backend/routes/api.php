@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ProjectProxyController;
 use App\Http\Controllers\Api\ProjectActivityController;
 use App\Http\Controllers\Api\ProjectUsersController;
+use App\Http\Controllers\Api\ContractController;
 
 // Legacy aliases (deprecated, use projects instead)
 use App\Http\Controllers\Api\TenantController;
@@ -350,6 +351,21 @@ Route::middleware(['auth:sanctum', 'ensure.2fa', 'super.admin'])->group(function
 
         // Tenants within a project
         Route::get('{slug}/tenants', [ProjectController::class, 'tenants'])->name('tenants.index');
+    });
+
+    // ── Contracts ──────────────────────────────────────────────────────────────
+    Route::prefix('tenants/{tenantId}/contracts')->name('contracts.')->group(function () {
+        Route::get('/',    [ContractController::class, 'index'])->name('index');
+        Route::post('/',   [ContractController::class, 'store'])->name('store');
+    });
+
+    Route::prefix('contracts')->name('contracts.')->group(function () {
+        Route::get('{id}',              [ContractController::class, 'show'])->name('show');
+        Route::put('{id}',              [ContractController::class, 'update'])->name('update');
+        Route::delete('{id}',           [ContractController::class, 'destroy'])->name('destroy');
+        Route::post('{id}/activate',    [ContractController::class, 'activate'])->name('activate');
+        Route::post('{id}/terminate',   [ContractController::class, 'terminate'])->name('terminate');
+        Route::post('{id}/renew',       [ContractController::class, 'renew'])->name('renew');
     });
 
     /*

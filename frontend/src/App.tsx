@@ -49,6 +49,7 @@ import ProjectMaintenance from './pages/projects/ProjectMaintenance'
 import TenantConfigurations from './pages/tenants/TenantConfigurations'
 import TenantPlans from './pages/tenants/TenantPlans'
 import TenantStorage from './pages/tenants/TenantStorage'
+import TenantContracts from './pages/tenants/TenantContracts'
 
 // Project Context Pages (when inside a specific project)
 import ProjectDashboard from './pages/projects/ProjectDashboard'
@@ -210,6 +211,7 @@ function AppRoutes() {
         <Route path="project/:slug/tenants" element={<ProjectTenantsList />} />
         <Route path="project/:slug/tenants/create" element={<ProjectCreateTenant />} />
         <Route path="project/:slug/tenants/:tenantId/admin/create" element={<ProjectCreateAdminBootstrap />} />
+        <Route path="project/:slug/tenants/:tenantId/contracts" element={<TenantContracts />} />
         
         {/* Project Settings */}
         <Route path="project/:slug/settings" element={<ComingSoon title="Impostazioni Progetto" />} />

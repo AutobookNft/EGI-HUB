@@ -100,6 +100,12 @@ class TenantAdminBootstrap extends Model
         return $this->belongsTo(Tenant::class, 'tenant_id');
     }
 
+    /** Il contratto che ha originato questo bootstrap. */
+    public function contract(): BelongsTo
+    {
+        return $this->belongsTo(Contract::class, 'contract_id');
+    }
+
     /** L'utente creato a completamento dell'attivazione (nullable). */
     public function user(): BelongsTo
     {
