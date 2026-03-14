@@ -15,9 +15,12 @@ import {
   CheckCircle,
   Crown,
   User,
+  Mail,
+  Clock,
+  RefreshCw,
 } from 'lucide-react';
-import { getProjectUsers } from '../../services/projectApi';
-import type { ProjectUser, ProjectUsersMeta } from '../../types/project';
+import { getProjectUsers, resendBootstrapInvite } from '../../services/projectApi';
+import type { ProjectUser, ProjectUsersMeta, PendingBootstrap } from '../../types/project';
 
 const usertypeLabel: Record<string, string> = {
   pa_entity_admin: 'Admin PA',
@@ -49,9 +52,12 @@ export default function ProjectAdminsList() {
   const { slug } = useParams<{ slug: string }>();
 
   const [users, setUsers] = useState<ProjectUser[]>([]);
+  const [pendingInvites, setPendingInvites] = useState<PendingBootstrap[]>([]);
   const [meta, setMeta] = useState<ProjectUsersMeta | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<number | null>(null);
+  const [resendMsg, setResendMsg] = useState<{ id: number; ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
     if (slug) loadUsers();
@@ -63,6 +69,7 @@ export default function ProjectAdminsList() {
       setLoading(true);
       const response = await getProjectUsers(slug);
       setUsers(response.data);
+      setPendingInvites(response.pending_invites);
       setMeta(response.meta);
       setError(null);
     } catch (err) {
@@ -73,8 +80,30 @@ export default function ProjectAdminsList() {
     }
   };
 
-  // Raggruppa per tenant
-  const byTenant = users.reduce<Record<string, { tenantName: string; tenantSlug: string; entityType: string | null; users: ProjectUser[] }>>(
+  const handleResend = async (bootstrap: PendingBootstrap) => {
+    setResendingId(bootstrap.id);
+    setResendMsg(null);
+    try {
+      const res = await resendBootstrapInvite(bootstrap.id);
+      setResendMsg({ id: bootstrap.id, ok: res.success, text: res.message ?? 'Invito reinviato.' });
+      await loadUsers();
+    } catch {
+      setResendMsg({ id: bootstrap.id, ok: false, text: 'Errore durante il reinvio.' });
+    } finally {
+      setResendingId(null);
+    }
+  };
+
+  // Raggruppa utenti + bootstrap per tenant
+  type TenantGroup = {
+    tenantName: string;
+    tenantSlug: string;
+    entityType: string | null;
+    users: ProjectUser[];
+    bootstraps: PendingBootstrap[];
+  };
+
+  const byTenant = users.reduce<Record<string, TenantGroup>>(
     (acc, u) => {
       const key = u.tenant ? String(u.tenant.id) : 'no_tenant';
       if (!acc[key]) {
@@ -83,6 +112,7 @@ export default function ProjectAdminsList() {
           tenantSlug: u.tenant?.slug ?? '',
           entityType: u.tenant?.entity_type ?? null,
           users: [],
+          bootstraps: [],
         };
       }
       acc[key].users.push(u);
@@ -90,6 +120,21 @@ export default function ProjectAdminsList() {
     },
     {}
   );
+
+  // Aggiungi i bootstrap ai rispettivi gruppi (crea il gruppo se non esiste)
+  pendingInvites.forEach((b) => {
+    const key = b.tenant ? String(b.tenant.id) : 'no_tenant';
+    if (!byTenant[key]) {
+      byTenant[key] = {
+        tenantName: b.tenant?.name ?? 'Senza tenant',
+        tenantSlug: b.tenant?.slug ?? '',
+        entityType: b.tenant?.entity_type ?? null,
+        users: [],
+        bootstraps: [],
+      };
+    }
+    byTenant[key].bootstraps.push(b);
+  });
 
   if (loading) {
     return (
@@ -139,8 +184,8 @@ export default function ProjectAdminsList() {
             <div className="text-3xl font-bold text-green-600">{Object.keys(byTenant).length}</div>
           </div>
           <div className="bg-white rounded-xl shadow p-4 text-center border border-gray-100">
-            <div className="text-sm text-gray-500 mb-1">Tipi utente</div>
-            <div className="text-3xl font-bold text-purple-600">{Object.keys(meta.by_usertype).length}</div>
+            <div className="text-sm text-gray-500 mb-1">Inviti pendenti</div>
+            <div className="text-3xl font-bold text-amber-500">{pendingInvites.length}</div>
           </div>
         </div>
       )}
@@ -171,10 +216,90 @@ export default function ProjectAdminsList() {
                   <span className="ml-2 text-xs text-gray-500 uppercase tracking-wide">{group.entityType}</span>
                 )}
               </div>
-              <span className="ml-auto text-sm text-gray-400">{group.users.length} utenti</span>
+              <div className="ml-auto flex items-center gap-3 text-sm text-gray-400">
+                {group.bootstraps.length > 0 && (
+                  <span className="flex items-center gap-1 text-amber-500 font-medium">
+                    <Clock className="w-3.5 h-3.5" />
+                    {group.bootstraps.length} in attesa
+                  </span>
+                )}
+                <span>{group.users.length} utenti</span>
+              </div>
             </div>
 
-            {/* Tabella utenti */}
+            {/* Inviti pendenti */}
+            {group.bootstraps.length > 0 && (
+              <div className="border-b border-amber-100 bg-amber-50">
+                <div className="px-5 py-2 text-xs font-semibold text-amber-700 uppercase tracking-wide flex items-center gap-1">
+                  <Mail className="w-3.5 h-3.5" /> Inviti in attesa di attivazione
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="table w-full text-sm">
+                    <thead>
+                      <tr className="text-amber-700 bg-amber-50">
+                        <th>Nome</th>
+                        <th>Email</th>
+                        <th>Ruolo</th>
+                        <th>Stato</th>
+                        <th>Scadenza invito</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.bootstraps.map((b) => (
+                        <tr key={`bootstrap-${b.id}`} className="bg-amber-50/50">
+                          <td className="font-medium text-gray-700">{b.name || '—'}</td>
+                          <td className="text-gray-600">{b.email}</td>
+                          <td className="text-gray-500">{b.job_title || '—'}</td>
+                          <td>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
+                              b.status === 'invited'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}>
+                              {b.status === 'invited'
+                                ? <><Mail className="w-3 h-3" /> Invitato</>
+                                : <><Clock className="w-3 h-3" /> In attesa</>
+                              }
+                            </span>
+                          </td>
+                          <td className="text-gray-400 text-xs">
+                            {b.invitation_expires_at ? (
+                              b.is_expired
+                                ? <span className="text-red-500">Scaduto</span>
+                                : new Date(b.invitation_expires_at).toLocaleDateString('it-IT')
+                            ) : '—'}
+                          </td>
+                          <td>
+                            {b.can_resend && (
+                              <button
+                                className="btn btn-xs btn-outline btn-warning gap-1"
+                                disabled={resendingId === b.id}
+                                onClick={() => handleResend(b)}
+                              >
+                                {resendingId === b.id
+                                  ? <span className="loading loading-spinner loading-xs"></span>
+                                  : <RefreshCw className="w-3 h-3" />
+                                }
+                                Reinvia
+                              </button>
+                            )}
+                            {resendMsg?.id === b.id && (
+                              <span className={`ml-2 text-xs ${resendMsg.ok ? 'text-green-600' : 'text-red-500'}`}>
+                                {resendMsg.text}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Tabella utenti attivi */}
+            {group.users.length > 0 && (
             <div className="overflow-x-auto">
               <table className="table table-zebra w-full">
                 <thead>
@@ -231,6 +356,7 @@ export default function ProjectAdminsList() {
                 </tbody>
               </table>
             </div>
+            )}
           </div>
         ))
       )}

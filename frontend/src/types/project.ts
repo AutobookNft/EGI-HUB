@@ -108,6 +108,21 @@ export interface ProjectUsersMeta {
   by_tenant: Record<string, number>;
 }
 
+export interface PendingBootstrap {
+  id: number;
+  name: string;
+  email: string;
+  job_title: string | null;
+  status: 'pending' | 'invited';
+  status_label: string;
+  invitation_sent_at: string | null;
+  invitation_expires_at: string | null;
+  can_resend: boolean;
+  is_expired: boolean;
+  created_at: string;
+  tenant: ProjectUserTenant | null;
+}
+
 // ==========================================
 // Project Admin Types (legacy — project_admins table)
 // ==========================================

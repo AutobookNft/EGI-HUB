@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
+use App\Models\TenantAdminBootstrap;
 use App\Models\User;
+use App\Enums\BootstrapStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -77,11 +79,60 @@ class ProjectUsersController extends Controller
             'by_tenant'   => $mapped->groupBy('tenant.id')->map->count(),
         ];
 
+        // Bootstrap in attesa di attivazione (pending + invited)
+        $bootstraps = TenantAdminBootstrap::forProject($project->id)
+            ->whereIn('status', [BootstrapStatus::Pending->value, BootstrapStatus::Invited->value])
+            ->select([
+                'id', 'system_project_id', 'tenant_id', 'user_id',
+                'first_name_snapshot', 'last_name_snapshot', 'email_snapshot',
+                'job_title_snapshot', 'status',
+                'invitation_sent_at', 'invitation_expires_at', 'created_at',
+            ])
+            ->orderBy('tenant_id')
+            ->orderBy('created_at')
+            ->get();
+
+        // Aggiungi i tenant dei bootstrap alla mappa (se non già presenti)
+        $bootstrapTenantIds = $bootstraps->pluck('tenant_id')->filter()->unique()->values();
+        $missingTenantIds   = $bootstrapTenantIds->diff($tenantIds)->values();
+        if ($missingTenantIds->isNotEmpty()) {
+            $extraTenants = DB::table('tenants')
+                ->whereIn('id', $missingTenantIds)
+                ->select('id', 'name', 'slug', 'entity_type')
+                ->get()
+                ->keyBy('id');
+            $tenants = $tenants->union($extraTenants);
+        }
+
+        $pendingInvites = $bootstraps->map(function (TenantAdminBootstrap $b) use ($tenants) {
+            $tenant = $b->tenant_id ? ($tenants[$b->tenant_id] ?? null) : null;
+            return [
+                'id'                      => $b->id,
+                'name'                    => trim(($b->first_name_snapshot ?? '') . ' ' . ($b->last_name_snapshot ?? '')),
+                'email'                   => $b->email_snapshot,
+                'job_title'               => $b->job_title_snapshot,
+                'status'                  => $b->status instanceof BootstrapStatus ? $b->status->value : $b->status,
+                'status_label'            => $b->status instanceof BootstrapStatus ? $b->status->label() : $b->status,
+                'invitation_sent_at'      => $b->invitation_sent_at,
+                'invitation_expires_at'   => $b->invitation_expires_at,
+                'can_resend'              => $b->canResendInvite(),
+                'is_expired'              => $b->isExpired(),
+                'created_at'              => $b->created_at,
+                'tenant'                  => $tenant ? [
+                    'id'          => $tenant->id,
+                    'name'        => $tenant->name,
+                    'slug'        => $tenant->slug,
+                    'entity_type' => $tenant->entity_type,
+                ] : null,
+            ];
+        });
+
         return response()->json([
-            'success' => true,
-            'data'    => $mapped->values(),
-            'meta'    => $meta,
-            'project' => [
+            'success'         => true,
+            'data'            => $mapped->values(),
+            'pending_invites' => $pendingInvites->values(),
+            'meta'            => $meta,
+            'project'         => [
                 'id'   => $project->id,
                 'name' => $project->name,
                 'slug' => $project->slug,

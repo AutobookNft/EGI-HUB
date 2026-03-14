@@ -21,8 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $system_project_id
  * @property int $tenant_id
  * @property int|null $user_id
- * @property string $contract_reference
- * @property \Carbon\Carbon|null $contract_date
+ * @property int|null $contract_id
  * @property string $first_name_snapshot
  * @property string $last_name_snapshot
  * @property string $email_snapshot
@@ -54,8 +53,7 @@ class TenantAdminBootstrap extends Model
         'system_project_id',
         'tenant_id',
         'user_id',
-        'contract_reference',
-        'contract_date',
+        'contract_id',
         'first_name_snapshot',
         'last_name_snapshot',
         'email_snapshot',
@@ -76,7 +74,6 @@ class TenantAdminBootstrap extends Model
 
     protected $casts = [
         'status'                 => BootstrapStatus::class,
-        'contract_date'          => 'date',
         'invitation_sent_at'     => 'datetime',
         'invitation_expires_at'  => 'datetime',
         'activated_at'           => 'datetime',

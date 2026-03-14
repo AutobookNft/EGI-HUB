@@ -23,6 +23,7 @@ import type {
   MyProject,
   ProjectUser,
   ProjectUsersMeta,
+  PendingBootstrap,
 } from '../types/project';
 
 export interface ProjectTenant {
@@ -295,18 +296,32 @@ export async function getMyProjects(): Promise<{ data: MyProject[]; is_super_adm
 
 /**
  * Get users of a project (from shared users table, filtered by system_project_id)
+ * Also returns pending_invites (TenantAdminBootstrap records with status pending/invited)
  */
 export async function getProjectUsers(slug: string): Promise<{
   data: ProjectUser[];
+  pending_invites: PendingBootstrap[];
   meta: ProjectUsersMeta;
 }> {
-  const response = await api.get<ApiResponse<ProjectUser[]> & { meta: ProjectUsersMeta }>(
-    `/projects/${slug}/admins`
-  );
+  const response = await api.get<ApiResponse<ProjectUser[]> & {
+    meta: ProjectUsersMeta;
+    pending_invites: PendingBootstrap[];
+  }>(`/projects/${slug}/admins`);
   return {
     data: response.data.data,
+    pending_invites: response.data.pending_invites ?? [],
     meta: response.data.meta,
   };
+}
+
+/**
+ * Reinvia l'email di invito a un bootstrap pendente
+ */
+export async function resendBootstrapInvite(bootstrapId: number): Promise<{ success: boolean; message: string }> {
+  const response = await api.post<{ success: boolean; message: string }>(
+    `/admin/bootstraps/${bootstrapId}/resend`
+  );
+  return response.data;
 }
 
 /**
